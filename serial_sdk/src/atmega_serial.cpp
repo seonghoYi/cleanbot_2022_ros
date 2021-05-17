@@ -1,5 +1,5 @@
 #include "atmega_serial.hpp"
-
+#include <stdio.h>
 
 //using namespace hw_control;
 
@@ -137,7 +137,7 @@ bool Controller::steering(std::uint8_t steering_angle, std::uint8_t speed)
     if (steering_angle < -100 || steering_angle > 100)
     {
         return false;
-    }
+    }spin spinonce
     param[0] = steering_angle;
     param[0] = speed;
     return this->send_inst(ID, STEERING, param, 2);
@@ -179,13 +179,16 @@ bool receive_packet();
 
 void initMotor(std::string &port, int baudrate, int buf_len)
 {
+    printf("%s, %d\n", port.c_str(), baudrate);
     p_driver = new serial::Serial(port, baudrate);
     p_packet_buf_ = new std::uint8_t[buf_len_];
     if (p_driver->open() < 0)
     {
+        printf("error\n");
         deinitMotor();
         return;
     }
+    printf("success\n");
 }
 
 void deinitMotor()
@@ -234,29 +237,29 @@ bool receive_packet()
 }
 
 
-bool stop()
+bool stopMotor()
 {
     return send_inst(ID, STOP, NULL, 0);
 }
 
-bool hold()
+bool holdMotor()
 {
     return send_inst(ID, HOLD, NULL, 0);
 }
 
-bool advance(std::uint8_t speed)
+bool advanceMotor(std::uint8_t speed)
 {
     std::uint8_t param = speed;
     return send_inst(ID, ADVANCE, &param, 1);
 }
 
-bool reverse(std::uint8_t speed)
+bool reverseMotor(std::uint8_t speed)
 {
     std::uint8_t param = speed;
     return send_inst(ID, REVERSE, &param, 1);
 }
 
-bool turn(std::string direction, std::uint8_t speed)
+bool turnMotor(std::string direction, std::uint8_t speed)
 {
     std::uint8_t param[2];
     if (direction == "CW")
@@ -277,7 +280,7 @@ bool turn(std::string direction, std::uint8_t speed)
     
 }
 
-bool steering(std::uint8_t steering_angle, std::uint8_t speed)
+bool steeringMotor(std::uint8_t steering_angle, std::uint8_t speed)
 {
     std::uint8_t param[2];
     if (steering_angle < -100 || steering_angle > 100)

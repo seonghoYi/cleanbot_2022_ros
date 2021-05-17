@@ -18,7 +18,8 @@ int main(int argc, char **argv)
 {
     ros::init(argc, argv, "odom_pub");
     ros::NodeHandle nh;
-    ros::Publisher odom_pub = nh.advertise<nav_msgs::Odometry>("odom", 50);
+    ros::Subscriber cmd_vel_sub = nh.subscribe("cmd_vel", 1000, commandVelocityCallback);
+    ros::Publisher odom_pub = nh.advertise<nav_msgs::Odometry>("odom", 100);
     tf::TransformBroadcaster odom_broadcaster;
 
 
@@ -31,7 +32,7 @@ int main(int argc, char **argv)
     current_time = ros::Time::now();
     last_time = ros::Time::now();
 
-    ros::Rate r(1.0);
+    ros::Rate r(50.0);
 
     while(nh.ok())
     {
@@ -40,16 +41,24 @@ int main(int argc, char **argv)
 
 
         double dt = (current_time - last_time).toSec();
+        /*
         double delta_x = vx * cos(th) * dt;
         double delta_y = vx * sin(th) * dt;
         double delta_th = vth * dt;
+        */
 
-        x += delta_x;
-        y += delta_y;
+        double delta_translation = vx * dt;
+        double delta_th = vth * dt;
+        
         th += delta_th;
+        x += delta_translation * cos(th);
+        y += delta_translation * sin(th);
+        
 
+        //ROS_INFO("x:%f, y:%f, th:%f\n", x, y, th);
+        //ROS_INFO("delta_translation: %f, delta_th:%f\n", delta_translation, delta_th);
         geometry_msgs::Quaternion odom_quat = tf::createQuaternionMsgFromYaw(th);
-
+        
         geometry_msgs::TransformStamped odom_trans;
         odom_trans.header.stamp = current_time;
         odom_trans.header.frame_id = "odom";
@@ -61,7 +70,7 @@ int main(int argc, char **argv)
         odom_trans.transform.rotation = odom_quat;
 
         odom_broadcaster.sendTransform(odom_trans);
-
+        
         nav_msgs::Odometry odom;
         odom.header.stamp = current_time;
         odom.header.frame_id = "odom";
@@ -76,9 +85,9 @@ int main(int argc, char **argv)
         odom.twist.twist.linear.y = vx * sin(th);
         odom.twist.twist.angular.z = vth;
 
+        last_time = current_time;
 
         odom_pub.publish(odom);
-        last_time = current_time;
 
         r.sleep();
     }
