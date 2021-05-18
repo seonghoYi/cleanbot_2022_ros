@@ -2,7 +2,7 @@
 #include "nav_msgs/Odometry.h"
 #include "geometry_msgs/Twist.h"
 #include "tf/transform_broadcaster.h"
-
+#include "sensor_msgs/Imu.h"
 
 static float vx, vth;
 
@@ -10,15 +10,21 @@ static float vx, vth;
 void commandVelocityCallback(const geometry_msgs::Twist &cmd_vel)
 {
     vx = cmd_vel.linear.x;
-    vth = cmd_vel.angular.z;
+    //vth = cmd_vel.angular.z;
 }
 
+void imuCallback(const sensor_msgs::Imu &imu)
+{
+    vth = imu.angular_velocity.z;
+    //ROS_INFO("vth: %f\n", vth);
+}
 
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "odom_pub");
     ros::NodeHandle nh;
     ros::Subscriber cmd_vel_sub = nh.subscribe("cmd_vel", 1000, commandVelocityCallback);
+    ros::Subscriber imu_sub = nh.subscribe("imu/data", 100, imuCallback);
     ros::Publisher odom_pub = nh.advertise<nav_msgs::Odometry>("odom", 100);
     tf::TransformBroadcaster odom_broadcaster;
 
