@@ -5,6 +5,7 @@
 #include "sensor_msgs/Imu.h"
 
 static float vx, vth;
+static float th_imu;
 
 
 void commandVelocityCallback(const geometry_msgs::Twist &cmd_vel)
@@ -17,6 +18,8 @@ void imuCallback(const sensor_msgs::Imu &imu)
 {
     vth = imu.angular_velocity.z;
     //ROS_INFO("vth: %f\n", vth);
+    th_imu = tf::getYaw(imu.orientation);
+
 }
 
 int main(int argc, char **argv)
@@ -38,7 +41,7 @@ int main(int argc, char **argv)
     current_time = ros::Time::now();
     last_time = ros::Time::now();
 
-    ros::Rate r(50.0);
+    ros::Rate r(20.0);
 
     while(nh.ok())
     {
@@ -54,14 +57,15 @@ int main(int argc, char **argv)
         */
 
         double delta_translation = vx * dt;
-        double delta_th = vth * dt;
+        //double delta_th = vth * dt;
         
-        th += delta_th;
+        //th += delta_th;
+        th = th_imu;
         x += delta_translation * cos(th);
         y += delta_translation * sin(th);
-        
+    
 
-        //ROS_INFO("x:%f, y:%f, th:%f\n", x, y, th);
+        ROS_INFO("x:%f, y:%f, th:%f\n", x, y, th);
         //ROS_INFO("delta_translation: %f, delta_th:%f\n", delta_translation, delta_th);
         geometry_msgs::Quaternion odom_quat = tf::createQuaternionMsgFromYaw(th);
         
