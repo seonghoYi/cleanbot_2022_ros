@@ -17,15 +17,18 @@ enum
 
 enum
 {
-    STOP = 0x00,
-    HOLD,
-    ADVANCE,
-    REVERSE,
-    TURN,
-    STEERING,
-    LMCONFIG,
-    RMCONFIG,
-    MTCONFIG
+    MOTOR_STOP = 0x00,
+    MOTOR_RUN,
+    MOTOR_SET_LEFT_SPEED,
+    MOTOR_SET_RIGHT_SPEED,
+    MOTOR_SET_LEFT_DIR,
+    MOTOR_SET_RIGHT_DIR,
+    BT_SET_CONFIG_MODE,
+    BT_CLEAR_CONFIG_MODE,
+    BT_WRITE,
+    SUCTION_MOTOR_RUN,
+    SUCTION_MOTOR_STOP,
+    SERVO_WRITE
 };
 
 const std::uint8_t ID = 0x01;
@@ -239,74 +242,60 @@ bool receive_packet()
 
 bool stopMotor()
 {
-    return send_inst(ID, STOP, NULL, 0);
+    return send_inst(ID, MOTOR_STOP, NULL, 0);
 }
 
-bool holdMotor()
+bool runMotor()
 {
-    return send_inst(ID, HOLD, NULL, 0);
+    return send_inst(ID, MOTOR_RUN, NULL, 0);
 }
 
-bool advanceMotor(std::uint8_t speed)
-{
-    std::uint8_t param = speed;
-    return send_inst(ID, ADVANCE, &param, 1);
-}
-
-bool reverseMotor(std::uint8_t speed)
+bool setLeftMotorSpeed(std::uint8_t speed)
 {
     std::uint8_t param = speed;
-    return send_inst(ID, REVERSE, &param, 1);
+    return send_inst(ID, MOTOR_SET_LEFT_SPEED, &param, 1);
 }
 
-bool turnMotor(std::string direction, std::uint8_t speed)
+bool setRightMotorSpeed(std::uint8_t speed)
 {
-    std::uint8_t param[2];
-    if (direction == "CW")
-    {
-        param[0] = 1;
-    }
-    else if (direction == "CCW")
-    {
-        param[0] = 0;
-    }
-    else
-    {
-        return false;
-    }
-    param[1] = speed;
+    std::uint8_t param = speed;
+    return send_inst(ID, MOTOR_SET_RIGHT_SPEED, &param, 1);
+}
 
-    return send_inst(ID, TURN, param, 2);
+bool setLeftMotorDirection(bool dir)
+{
+    std::uint8_t param = dir;
+    return send_inst(ID, MOTOR_SET_LEFT_DIR, &param, 1);
     
 }
 
-bool steeringMotor(std::uint8_t steering_angle, std::uint8_t speed)
+bool setRightMotorDirection(bool dir)
 {
-    std::uint8_t param[2];
-    if (steering_angle < -100 || steering_angle > 100)
-    {
-        return false;
-    }
-    param[0] = steering_angle;
-    param[0] = speed;
-    return send_inst(ID, STEERING, param, 2);
+    std::uint8_t param = dir;
+    return send_inst(ID, MOTOR_SET_RIGHT_DIR, &param, 1);
 }
 
-bool configLeftMotor(std::uint8_t speed, bool dir)
+bool setModeBTConfig()
 {
-    std::uint8_t param[2] = {speed, dir};
-    return send_inst(ID, LMCONFIG, param, 2);
+    return send_inst(ID, BT_SET_CONFIG_MODE, NULL, 0);
 }
 
-bool configRightMotor(std::uint8_t speed, bool dir)
+bool clearModeBTConfig()
 {
-    std::uint8_t param[2] = {speed, dir};
-    return send_inst(ID, RMCONFIG, param, 2);
+    return send_inst(ID, BT_CLEAR_CONFIG_MODE, NULL, 0);
 }
 
-bool configMotor(std::uint8_t L_speed, bool L_dir, std::uint8_t R_speed, bool R_dir)
+bool writeBT(std::uint8_t *data, int len)
 {
-    std::uint8_t param[4] = {L_speed, L_dir, R_speed, R_dir};
-   
-    return send_inst(ID, MTCONFIG, param, 4);
+    return send_inst(ID, BT_WRITE, data, len);
+}
+
+bool runSuctionMotor()
+{
+    return send_inst(ID, SUCTION_MOTOR_RUN, NULL, 0);
+}
+
+bool stopSuctionMotor()
+{
+    return send_inst(ID, SUCTION_MOTOR_STOP, NULL, 0);
 }
