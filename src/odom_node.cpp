@@ -41,7 +41,7 @@ int main(int argc, char **argv)
     current_time = ros::Time::now();
     last_time = ros::Time::now();
 
-    ros::Rate r(20.0);
+    ros::Rate r(50.0);
 
     while(nh.ok())
     {
@@ -57,7 +57,7 @@ int main(int argc, char **argv)
         */
 
         double delta_translation = vx * dt;
-        //double delta_th = vth * dt;
+        double delta_th = vth * dt;
         
         //th += delta_th;
         th = th_imu;
@@ -65,7 +65,7 @@ int main(int argc, char **argv)
         y += delta_translation * sin(th);
     
 
-        ROS_INFO("x:%f, y:%f, th:%f\n", x, y, th);
+        //ROS_INFO("x:%f, y:%f, th:%f\n", x, y, th);
         //ROS_INFO("delta_translation: %f, delta_th:%f\n", delta_translation, delta_th);
         geometry_msgs::Quaternion odom_quat = tf::createQuaternionMsgFromYaw(th);
         

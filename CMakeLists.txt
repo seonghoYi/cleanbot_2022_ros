@@ -169,9 +169,6 @@ target_link_libraries(serial_node ${catkin_LIBRARIES} wiringPi -lrt)
 add_executable(odom_node src/odom_node.cpp)
 target_link_libraries(odom_node ${catkin_LIBRARIES})
 
-add_executable(odom_tf_publisher_node src/odom_tf_publisher_node.cpp)
-target_link_libraries(odom_tf_publisher_node ${catkin_LIBRARIES})
-
 #############
 ## Install ##
 #############
