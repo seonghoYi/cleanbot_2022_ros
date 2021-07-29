@@ -6,11 +6,12 @@
 
   <node pkg="vacuum_cleaner_bringup" type="odom_node" name="odom_node" output="screen">
   </node>
-
+<!--
   <node pkg="myahrs_driver" type="myahrs_driver" name="myahrs_driver" output="screen">
     <param name="port" value="/dev/ttyACM0" />
     <param name="baud_rate" value="115200" />
   </node>
+-->
 <!--
   <node name="ydlidar_node"  pkg="ydlidar_ros"  type="ydlidar_node" respawn="false" >
     <param name="port"         type="string" value="/dev/ttyUSB0"/>  
@@ -45,17 +46,25 @@
     <param name="frequency"    type="double" value="10"/>
     <param name="samp_rate"    type="int"    value="9"/>
   </node>
-<!--
-  <node pkg="tf" type="static_transform_publisher" name="base_link_to_laser4"
+<!--  <node pkg="tf" type="static_transform_publisher" name="base_link_to_laser4"
     args="-0.07 0.0 0.09 0.0 0.0  0.0 /base_link /laser_frame 50" /> 
 -->
+<!--
   <node pkg="tf" type="static_transform_publisher" name="base_link_to_laser4"
     args="-0.07 0.0 0.09 1.0471976 0.0  0.0 /base_link /laser_frame 50" /> 
-    
+-->
+  <node pkg="tf" type="static_transform_publisher" name="base_link_to_laser4"
+    args="-0.07 0.0 0.09 -2.0944 0.0  0.0 /base_link /laser_frame 20" /> 
+
+
   <!--
   <node pkg="vacuum_cleaner_bringup" type="odom_tf_publisher_node" name="odom_tf_publisher_node" output="screen">
   </node>
   -->
+
+  <include file="$(find vacuum_cleaner_bringup)/launch/rs_camera.launch"/>
+  <node pkg="tf" type="static_transform_publisher" name="base_link_to_camera"
+    args="0.1 0.0 0.065 0.0 0.0  0.0 /base_link /camera_link 20" /> 
 
   
 </launch>
