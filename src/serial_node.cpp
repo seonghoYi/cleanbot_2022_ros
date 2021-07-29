@@ -2,11 +2,14 @@
 #include "geometry_msgs/Twist.h"
 #include "atmega_serial.hpp"
 
+const float PI = 3.1415926;
+const float WHEEL_WIDTH = 0.07f;
+const float ROBOT_WIDTH = 0.23f;
+
 void controlMotor(float left_speed, float right_speed);
 
 void commandVelocityCallback(const geometry_msgs::Twist &cmd_vel)
 {
-    const float ROBOT_WIDTH = 0.35f;
     //ROS_INFO("cmd_vel.linear.x: %f, cmd_vel.angular.z * ROBOT_WIDTH / 2: %f\n", cmd_vel.linear.x, cmd_vel.angular.z * ROBOT_WIDTH / 2);
     float left_speed_out = cmd_vel.linear.x - cmd_vel.angular.z * ROBOT_WIDTH / 2; //v=rw 선속도=반지름*각속도
     float right_speed_out = cmd_vel.linear.x + cmd_vel.angular.z * ROBOT_WIDTH / 2;
@@ -18,8 +21,6 @@ void controlMotor(float left_speed, float right_speed)
 {
     //static Controller device(port, baudrate, 128);
     //const float MAX_SPEED = 0.376f; //m/s
-    const float PI = 3.1415926;
-    const float WHEEL_WIDTH = 0.07f;
     
     bool L_dir;
     bool R_dir;
@@ -38,26 +39,27 @@ void controlMotor(float left_speed, float right_speed)
 
     if (left_speed > 0)
     {
-        L_dir = true;
+        L_dir = false;
     }
     else
     {
-        L_dir = false;
+        L_dir = true;
     }
 
     if (right_speed > 0)
     {
-        R_dir = true;
+        R_dir = false;
     }
     else
     {
-        R_dir = false;
+        R_dir = true;
     }
-
-    setLeftMotorSpeed((std::uint8_t) L_rpm);
+    //ROS_INFO("L_rpm: %d, R_rpm: %d, L_dir: %d, R_dir: %d\n", (int)abs(L_rpm), (int)abs(R_rpm), (int)L_dir, (int)R_dir);
+    setLeftMotorSpeed((std::uint8_t) abs(L_rpm));
+    setRightMotorSpeed((std::uint8_t) abs(R_rpm));
     setLeftMotorDirection((std::uint8_t) L_dir);
-    setRightMotorSpeed((std::uint8_t) R_rpm);
     setRightMotorDirection((std::uint8_t) R_dir);
+    runMotor();
 }
 
 
@@ -65,7 +67,8 @@ int main(int argc, char **argv)
 {
     std::string port;
     int baudrate = 38400;
-
+    ros_t rosserial;
+    rosserial.state = 0;
 
     ros::init(argc, argv, "serial_node");
     ros::NodeHandle nh;
@@ -79,8 +82,48 @@ int main(int argc, char **argv)
     initMotor(port, baudrate, 128);    
 
     ros::Subscriber sub = nh.subscribe("cmd_vel", 1000, commandVelocityCallback);
+    ros::Publisher pub = nh.advertise<geometry_msgs::Twist>("current_speed", 100);
 
-    ros::spin();
+    ros::Time last_time = ros::Time::now();
+
+    int L_rpm, R_rpm;
+    float L_speed, R_speed;
+    geometry_msgs::Twist vel;
+
+    ros::Rate(150.0);
+
+    while(nh.ok())
+    {
+        ros::spinOnce();
+        
+        if (ros::Time::now().nsec - last_time.nsec >= 100000000)
+        {
+            rosserial.state = 0;
+        }
+        
+        if (receive_packet(&rosserial))
+        {
+            if (rosserial.packet.inst == 0)
+            {
+                L_rpm = (rosserial.packet.msgs[2] << 0) & 0x00FF | (rosserial.packet.msgs[3] << 8) & 0xFF00;
+                R_rpm = (rosserial.packet.msgs[4] << 0) & 0x00FF | (rosserial.packet.msgs[5] << 8) & 0xFF00;
+
+                L_rpm = (rosserial.packet.msgs[0] && 0xFF) ? -L_rpm : L_rpm;
+                R_rpm = (rosserial.packet.msgs[1] && 0xFF) ? -R_rpm : R_rpm;
+                //ROS_INFO("%d, %d\n", L_rpm, R_rpm);
+                //ROS_INFO("%X, %X, %X, %X\n", rosserial.packet.msgs[2], rosserial.packet.msgs[3], rosserial.packet.msgs[4], rosserial.packet.msgs[5]); 
+                L_speed = L_rpm * (PI*WHEEL_WIDTH)/60;
+                R_speed = R_rpm * (PI*WHEEL_WIDTH)/60;
+                //ROS_INFO("%f, %f\n", L_speed, R_speed);
+
+                vel.linear.x = (L_speed + R_speed) / 2;
+                vel.angular.z = (R_speed - L_speed) / ROBOT_WIDTH;
+
+                pub.publish(vel);
+            }
+        }
+        last_time = ros::Time::now();
+    }
 
     return 0;
 }
