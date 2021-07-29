@@ -14,6 +14,12 @@ void commandVelocityCallback(const geometry_msgs::Twist &cmd_vel)
     //vth = cmd_vel.angular.z;
 }
 
+void velocityCallback(const geometry_msgs::Twist &vel)
+{
+    vx = vel.linear.x;
+    vth = vel.angular.z;
+}
+
 void imuCallback(const sensor_msgs::Imu &imu)
 {
     vth = imu.angular_velocity.z;
@@ -26,9 +32,11 @@ int main(int argc, char **argv)
 {
     ros::init(argc, argv, "odom_pub");
     ros::NodeHandle nh;
-    ros::Subscriber cmd_vel_sub = nh.subscribe("cmd_vel", 1000, commandVelocityCallback);
-    ros::Subscriber imu_sub = nh.subscribe("imu/data", 100, imuCallback);
-    ros::Publisher odom_pub = nh.advertise<nav_msgs::Odometry>("odom", 100);
+    //ros::Subscriber cmd_vel_sub = nh.subscribe("cmd_vel", 1000, commandVelocityCallback);
+    //ros::Subscriber imu_sub = nh.subscribe("imu/data", 100, imuCallback);
+    ros::Subscriber vel_sub = nh.subscribe("current_speed", 1024, velocityCallback);
+    
+    ros::Publisher odom_pub = nh.advertise<nav_msgs::Odometry>("odom", 128);
     tf::TransformBroadcaster odom_broadcaster;
 
 
@@ -59,12 +67,12 @@ int main(int argc, char **argv)
         double delta_translation = vx * dt;
         double delta_th = vth * dt;
         
-        //th += delta_th;
-        th = th_imu;
+        th += delta_th;
+        //th = delta_th;
         x += delta_translation * cos(th);
         y += delta_translation * sin(th);
-    
 
+        //ROS_INFO("th: %lf\n", th);
         //ROS_INFO("x:%f, y:%f, th:%f\n", x, y, th);
         //ROS_INFO("delta_translation: %f, delta_th:%f\n", delta_translation, delta_th);
         geometry_msgs::Quaternion odom_quat = tf::createQuaternionMsgFromYaw(th);
