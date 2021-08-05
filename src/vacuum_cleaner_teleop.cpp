@@ -4,7 +4,7 @@
 
 #include "ros/ros.h"
 #include "geometry_msgs/Twist.h"
-
+#include "std_msgs/Bool.h"
 
 // For non-blocking keyboard inputs
 int getch(void)
@@ -87,7 +87,7 @@ For Holonomic mode (strafing), hold down the shift key:
 
 t : up (+z)
 b : down (-z)
-
+a : clamp close, d: clamp open
 anything else : stop
 
 q/z : increase/decrease max speeds by 10%
@@ -100,8 +100,9 @@ CTRL-C to quit
 //float speed(0.065); // Linear velocity (m/s)
 //float turn(0.5); // Angular velocity (rad/s)
 float speed(0.1);
-float turn(0.67);
+float turn(0.6);
 float x(0), y(0), z(0), th(0); // Forward/backward/neutral direction vars
+bool servo_control = 0;
 char key(' ');
 
 int main(int argc, char **argv)
@@ -112,13 +113,29 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "teleop_key");
     ros::NodeHandle nh;
 
-    ros::Publisher pub = nh.advertise<geometry_msgs::Twist>("cmd_vel", 100);
+    ros::Publisher vel_pub = nh.advertise<geometry_msgs::Twist>("cmd_vel", 100);
+    ros::Publisher servo_pub = nh.advertise<std_msgs::Bool>("cmd_servo", 100);
 
     geometry_msgs::Twist twist;
 
     while(true)
     {
         key = getch();
+
+        if (key == 'a')
+        {
+            servo_control = true;
+            servo_pub.publish(servo_control);
+            printf("\rCurrent: speed %fm/s\tturn %frad/s | Last command: %c is_close:%x", speed, turn, key, servo_control);
+            continue;
+        }
+        else if (key == 'd')
+        {
+            servo_control = false;
+            servo_pub.publish(servo_control);
+            printf("\rCurrent: speed %fm/s\tturn %frad/s | Last command: %c is_close:%x", speed, turn, key, servo_control);
+            continue;
+        }
         // If the key corresponds to a key in moveBindings
         if (moveBindings.count(key) == 1)
         {
@@ -128,7 +145,7 @@ int main(int argc, char **argv)
             z = moveBindings[key][2];
             th = moveBindings[key][3];
 
-            printf("\rCurrent: speed %fm/s\tturn %frad/s | Last command: %c   ", speed, turn, key);
+            printf("\rCurrent: speed %fm/s\tturn %frad/s | Last command: %c is_close:%x", speed, turn, key, servo_control);
         }
 
         // Otherwise if it corresponds to a key in speedBindings
@@ -143,11 +160,11 @@ int main(int argc, char **argv)
             if (turn < 0.5)
               turn = 0.5;
             */
-            if (speed < 0.1)
-              speed = 0.1;
-            if (turn < 0.67)
-              turn = 0.67;
-            printf("\rCurrent: speed %fm/s\tturn %frad/s | Last command: %c   ", speed, turn, key);
+            if (speed < 0.07)
+              speed = 0.07;
+            if (turn < 0.3)
+              turn = 0.3;
+            printf("\rCurrent: speed %fm/s\tturn %frad/s | Last command: %c is_close:%x", speed, turn, key, servo_control);
         }
 
         // Otherwise, set the robot to stop
@@ -165,7 +182,7 @@ int main(int argc, char **argv)
                 break;
             }
 
-            printf("\rCurrent: speed %f\tturn %f | Invalid command! %c", speed, turn, key);
+            printf("\rCurrent: speed %fm/s\tturn %frad/s | Invalid_command! is_close:%x", speed, turn, servo_control);
         }
         // Update the Twist message
         twist.linear.x = x * speed;
@@ -177,7 +194,7 @@ int main(int argc, char **argv)
         twist.angular.z = th * turn;
 
         // Publish it and resolve any remaining callbacks
-        pub.publish(twist);
+        vel_pub.publish(twist);
         ros::spinOnce();
     }
 
