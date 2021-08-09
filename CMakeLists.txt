@@ -10,8 +10,13 @@ project(vacuum_cleaner_navigation)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
+  std_srvs
+  geometry_msgs
+  nav_msgs
+  map_msgs
   tf
   tf2
+  costmap_2d
 )
 
 ## System dependencies are found with CMake's conventions
@@ -121,6 +126,9 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
+
+add_executable(costmap_clear src/costmap_clear.cpp)
+target_link_libraries(costmap_clear ${catkin_LIBRARIES})
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
 #   src/${PROJECT_NAME}/vacuum_cleaner_navigation.cpp
