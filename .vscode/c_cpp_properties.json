@@ -6,8 +6,8 @@
         "limitSymbolsToIncludedHeaders": true
       },
       "includePath": [
-        "/home/seongholee/catkin_ws/devel/include/**",
         "/opt/ros/noetic/include/**",
+        "/home/seongholee/catkin_ws/devel/include/**",
         "/home/seongholee/catkin_ws/src/vacuum_cleaner_teleop/include/**",
         "/usr/include/**"
       ],
