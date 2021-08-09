@@ -72,7 +72,7 @@ Visualization Manager:
         base_link:
           Value: true
         camera_aligned_depth_to_color_frame:
-          Value: false
+          Value: true
         camera_color_frame:
           Value: false
         camera_color_optical_frame:
@@ -82,6 +82,10 @@ Visualization Manager:
         camera_depth_optical_frame:
           Value: false
         camera_link:
+          Value: false
+        can:
+          Value: true
+        carton:
           Value: true
         laser_frame:
           Value: true
@@ -89,8 +93,10 @@ Visualization Manager:
           Value: true
         odom:
           Value: true
+        plastic_bottle:
+          Value: true
       Marker Alpha: 1
-      Marker Scale: 1
+      Marker Scale: 0.5
       Name: TF
       Show Arrows: true
       Show Axes: true
@@ -104,7 +110,12 @@ Visualization Manager:
                   camera_color_optical_frame:
                     {}
                 camera_color_frame:
-                  {}
+                  can:
+                    {}
+                  carton:
+                    {}
+                  plastic_bottle:
+                    {}
                 camera_depth_frame:
                   camera_depth_optical_frame:
                     {}
@@ -155,7 +166,7 @@ Visualization Manager:
       Draw Behind: true
       Enabled: true
       Name: Map
-      Topic: /move_base/global_costmap/costmap
+      Topic: /vacuum_cleaner/modified_global_costmap
       Unreliable: false
       Use Timestamp: false
       Value: true
@@ -165,7 +176,7 @@ Visualization Manager:
       Draw Behind: false
       Enabled: true
       Name: Map
-      Topic: /move_base/local_costmap/costmap
+      Topic: /vacuum_cleaner/modified_local_costmap
       Unreliable: false
       Use Timestamp: false
       Value: true
@@ -175,7 +186,7 @@ Visualization Manager:
       Axes Radius: 0.009999999776482582
       Class: rviz/PoseArray
       Color: 255; 25; 0
-      Enabled: true
+      Enabled: false
       Head Length: 0.07000000029802322
       Head Radius: 0.029999999329447746
       Name: PoseArray
@@ -185,7 +196,7 @@ Visualization Manager:
       Shape: Arrow (Flat)
       Topic: /particlecloud
       Unreliable: false
-      Value: true
+      Value: false
     - Alpha: 1
       Buffer Length: 1
       Class: rviz/Path
@@ -285,6 +296,7 @@ Visualization Manager:
         Grid: true
         LaserScan: true
         Map: true
+        Marker: true
         Odometry: true
         Path: true
         PointCloud2: true
@@ -305,7 +317,7 @@ Visualization Manager:
       Color: 255; 255; 255
       Color Transformer: Intensity
       Decay Time: 0
-      Enabled: true
+      Enabled: false
       Invert Rainbow: true
       Max Color: 255; 255; 255
       Min Color: 0; 0; 0
@@ -320,7 +332,7 @@ Visualization Manager:
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
-      Value: true
+      Value: false
     - Angle Tolerance: 0.10000000149011612
       Class: rviz/Odometry
       Covariance:
@@ -356,6 +368,31 @@ Visualization Manager:
       Topic: /odom
       Unreliable: false
       Value: false
+    - Class: rviz/Marker
+      Enabled: false
+      Marker Topic: /move_base/TebLocalPlannerROS/teb_markers
+      Name: Marker
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: false
+    - Alpha: 1
+      Arrow Length: 0.30000001192092896
+      Axes Length: 0.30000001192092896
+      Axes Radius: 0.009999999776482582
+      Class: rviz/PoseArray
+      Color: 255; 25; 0
+      Enabled: false
+      Head Length: 0.07000000029802322
+      Head Radius: 0.029999999329447746
+      Name: PoseArray
+      Queue Size: 10
+      Shaft Length: 0.23000000417232513
+      Shaft Radius: 0.009999999776482582
+      Shape: Arrow (Flat)
+      Topic: /move_base/TebLocalPlannerROS/teb_poses
+      Unreliable: false
+      Value: false
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -384,7 +421,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 2.302359104156494
+      Distance: 0.8405189514160156
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -392,17 +429,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 0.5380290150642395
-        Y: 0.16114512085914612
-        Z: 0.11912278831005096
+        X: 0.4728448688983917
+        Y: -0.19561272859573364
+        Z: 0.25620269775390625
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.5697963237762451
+      Pitch: 0.8597967028617859
       Target Frame: <Fixed Frame>
-      Yaw: 3.0467684268951416
+      Yaw: 3.5867679119110107
     Saved: ~
 Window Geometry:
   Camera:
