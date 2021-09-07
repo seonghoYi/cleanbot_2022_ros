@@ -3,10 +3,15 @@
 #include "geometry_msgs/Twist.h"
 #include "tf/transform_broadcaster.h"
 #include "sensor_msgs/Imu.h"
+#include "std_srvs/Empty.h"
+#include "std_msgs/Bool.h"
+
+#include <cmath>
 
 static float vx, vth;
 static float th_imu;
-
+ // initial pose
+static double x(0), y(0), th(0);
 
 void commandVelocityCallback(const geometry_msgs::Twist &cmd_vel)
 {
@@ -16,8 +21,8 @@ void commandVelocityCallback(const geometry_msgs::Twist &cmd_vel)
 
 void velocityCallback(const geometry_msgs::Twist &vel)
 {
-    vx = vel.linear.x;
-    vth = vel.angular.z;
+    vx = 2*vel.linear.x;
+    //vth = 2*vel.angular.z;
 }
 
 void imuCallback(const sensor_msgs::Imu &imu)
@@ -26,6 +31,19 @@ void imuCallback(const sensor_msgs::Imu &imu)
     //ROS_INFO("vth: %f\n", vth);
     th_imu = tf::getYaw(imu.orientation);
 
+    //ROS_INFO("%f, %f\n", vth, th_imu);
+
+}
+
+bool odomClear(std_srvs::Empty::Request &req,
+                std_srvs::Empty::Response &res)
+{
+    x = 0;
+    y = 0;
+    th = 0;
+    vx = 0;
+    vth = 0;
+    return true;
 }
 
 int main(int argc, char **argv)
@@ -33,23 +51,26 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "odom_pub");
     ros::NodeHandle nh;
     //ros::Subscriber cmd_vel_sub = nh.subscribe("cmd_vel", 1000, commandVelocityCallback);
-    //ros::Subscriber imu_sub = nh.subscribe("imu/data", 100, imuCallback);
+    ros::Subscriber imu_sub = nh.subscribe("imu/data_filtered", 100, imuCallback);
     ros::Subscriber vel_sub = nh.subscribe("current_speed", 1024, velocityCallback);
     
+    ros::Publisher move_state_pub = nh.advertise<std_msgs::Bool>("move_state", 128);
     ros::Publisher odom_pub = nh.advertise<nav_msgs::Odometry>("odom", 128);
+
+    ros::ServiceServer odom_clear = nh.advertiseService("vacuum_cleaner/odom_clear", odomClear);
     tf::TransformBroadcaster odom_broadcaster;
 
 
-    // initial pose
-    double x = 0;
-    double y = 0;
-    double th = 0;
+   
 
     ros::Time current_time, last_time;
     current_time = ros::Time::now();
     last_time = ros::Time::now();
 
-    ros::Rate r(50.0);
+    std_srvs::Empty empty_msgs;
+    std_msgs::Bool is_moving;
+
+    ros::Rate r(20.0);
 
     while(nh.ok())
     {
@@ -58,12 +79,17 @@ int main(int argc, char **argv)
 
 
         double dt = (current_time - last_time).toSec();
-        /*
+        
         double delta_x = vx * cos(th) * dt;
         double delta_y = vx * sin(th) * dt;
         double delta_th = vth * dt;
-        */
+        
 
+        x += delta_x;
+        y += delta_y;
+        //th += delta_th;
+        th = th_imu;
+        /*
         double delta_translation = vx * dt;
         double delta_th = vth * dt;
         
@@ -71,7 +97,7 @@ int main(int argc, char **argv)
         //th = delta_th;
         x += delta_translation * cos(th);
         y += delta_translation * sin(th);
-
+        */
         //ROS_INFO("th: %lf\n", th);
         //ROS_INFO("x:%f, y:%f, th:%f\n", x, y, th);
         //ROS_INFO("delta_translation: %f, delta_th:%f\n", delta_translation, delta_th);
@@ -106,6 +132,17 @@ int main(int argc, char **argv)
         last_time = current_time;
 
         odom_pub.publish(odom);
+
+        if (abs(delta_x) < 0.0001 && abs(delta_y) < 0.0001 && abs(delta_th) < 0.001)
+        {
+            is_moving.data = false;
+            move_state_pub.publish(is_moving);
+        }
+        else
+        {
+            is_moving.data = true;
+            move_state_pub.publish(is_moving);
+        }
 
         r.sleep();
     }
