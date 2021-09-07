@@ -89,4 +89,5 @@ bool clearModeBTConfig();
 bool writeBT(std::uint8_t *data, int len);
 bool runSuctionMotor();
 bool stopSuctionMotor();
-bool setMotorConfig(std::uint8_t L_rpm, bool L_dir, std::uint8_t R_rpm, bool R_dir);
+bool closeClamper();
+bool openClamper();

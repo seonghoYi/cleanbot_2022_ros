@@ -474,10 +474,16 @@ bool stopSuctionMotor()
     return send_inst(ID, SUCTION_MOTOR_STOP, NULL, 0);
 }
 
-bool setMotorConfig(std::uint8_t L_rpm, bool L_dir, std::uint8_t R_rpm, bool R_dir)
+bool closeClamper()
 {
-    send_inst(ID, MOTOR_SET_LEFT_SPEED, &L_rpm, 1);
-    send_inst(ID, MOTOR_SET_RIGHT_SPEED, &R_rpm, 1);
-    send_inst(ID, MOTOR_SET_LEFT_DIR, (std::uint8_t *)&L_dir, 1);
-    return send_inst(ID, MOTOR_SET_RIGHT_DIR, (std::uint8_t *)&R_dir, 1);
+    uint8_t l_data[] = {0, 180};
+    uint8_t r_data[] = {1, 0};
+    return send_inst(ID, SERVO_WRITE, l_data, 2) && send_inst(ID, SERVO_WRITE, r_data, 2);
+}
+
+bool openClamper()
+{
+    uint8_t l_data[] = {0, 0};
+    uint8_t r_data[] = {1, 180};
+    return send_inst(ID, SERVO_WRITE, l_data, 2) && send_inst(ID, SERVO_WRITE, r_data, 2);
 }
