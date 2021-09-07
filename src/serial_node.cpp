@@ -1,8 +1,9 @@
 #include "ros/ros.h"
+#include "std_msgs/Bool.h"
 #include "geometry_msgs/Twist.h"
 #include "atmega_serial.hpp"
 
-const float PI = 3.1415926;
+const float PI = 3.1415926f;
 const float WHEEL_WIDTH = 0.07f;
 const float ROBOT_WIDTH = 0.23f;
 
@@ -15,6 +16,18 @@ void commandVelocityCallback(const geometry_msgs::Twist &cmd_vel)
     float right_speed_out = cmd_vel.linear.x + cmd_vel.angular.z * ROBOT_WIDTH / 2;
     //ROS_INFO("left speed: %fm/s, right_speed: %fm/s\n", left_speed_out, right_speed_out);
     controlMotor(left_speed_out, right_speed_out);
+}
+
+void servoCallback(const std_msgs::Bool &cmd_servo)
+{
+    if (cmd_servo.data)
+    {
+        closeClamper();
+    }
+    else
+    {
+        openClamper();
+    }
 }
 
 void controlMotor(float left_speed, float right_speed)
@@ -36,6 +49,8 @@ void controlMotor(float left_speed, float right_speed)
 
     L_rpm = left_speed*60/(PI*WHEEL_WIDTH);
     R_rpm = right_speed*60/(PI*WHEEL_WIDTH);
+
+    //ROS_INFO("%f, %f\n", L_rpm, R_rpm);
 
     if (left_speed > 0)
     {
@@ -81,7 +96,8 @@ int main(int argc, char **argv)
 
     initMotor(port, baudrate, 128);    
 
-    ros::Subscriber sub = nh.subscribe("cmd_vel", 1000, commandVelocityCallback);
+    ros::Subscriber motor_sub = nh.subscribe("cmd_vel", 1000, commandVelocityCallback);
+    ros::Subscriber servo_sub = nh.subscribe("cmd_servo", 128, servoCallback);
     ros::Publisher pub = nh.advertise<geometry_msgs::Twist>("current_speed", 100);
 
     ros::Time last_time = ros::Time::now();
@@ -116,9 +132,9 @@ int main(int argc, char **argv)
                 R_speed = R_rpm * (PI*WHEEL_WIDTH)/60;
                 //ROS_INFO("%f, %f\n", L_speed, R_speed);
 
-                vel.linear.x = (L_speed + R_speed) / 2;
+                vel.linear.x = (R_speed + L_speed) / 2;
                 vel.angular.z = (R_speed - L_speed) / ROBOT_WIDTH;
-
+                //ROS_INFO("%f, %f\n", vel.linear.x, vel.angular.z);
                 pub.publish(vel);
             }
         }
