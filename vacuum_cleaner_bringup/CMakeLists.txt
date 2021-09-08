@@ -129,6 +129,7 @@ include_directories(
 # include
   ${catkin_INCLUDE_DIRS}
   ${PROJECT_SOURCE_DIR}/serial_sdk/include
+  wiringPi_include
 )
 
 link_directories(./serial_sdk/include)

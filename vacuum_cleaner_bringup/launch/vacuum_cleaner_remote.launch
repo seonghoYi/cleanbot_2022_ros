@@ -1,0 +1,38 @@
+<launch>
+  <node pkg="vacuum_cleaner_bringup" type="serial_node" name="serial_node" output="screen">
+    <param name="port" value="/dev/ttyUSB1"/>
+    <param name="baudrate" value="38400"/>
+  </node>
+
+  <node pkg="vacuum_cleaner_bringup" type="odom_node" name="odom_node" output="screen">
+  </node>
+
+
+  <node pkg="myahrs_driver" type="myahrs_driver" name="myahrs_driver" output="screen">
+    <param name="port" value="/dev/ttyACM0" />
+    <param name="baud_rate" value="115200" />
+  </node>
+
+
+  <node name="ydlidar_node"  pkg="ydlidar_ros"  type="ydlidar_node" respawn="false" >
+    <param name="port"         type="string" value="/dev/ttyUSB0"/>  
+    <param name="baudrate"         type="int" value="115200"/>  
+    <param name="frame_id"     type="string" value="laser_frame"/>
+    <param name="resolution_fixed"    type="bool"   value="true"/>
+    <param name="auto_reconnect"    type="bool"   value="true"/>
+    <param name="reversion"    type="bool"   value="false"/>
+    <param name="angle_min"    type="double" value="-180" />
+    <param name="angle_max"    type="double" value="180" />
+    <param name="range_min"    type="double" value="0.1" />
+    <param name="range_max"    type="double" value="12.0" />
+    <param name="ignore_array" type="string" value="" />
+    <param name="frequency"    type="double" value="8"/>
+    <param name="samp_rate"    type="int"    value="3"/>
+    <param name="isSingleChannel"    type="bool"   value="true"/>
+  </node>
+
+  <node pkg="tf" type="static_transform_publisher" name="base_link_to_laser4"
+    args="-0.07 0.0 0.09 0.0 0.0  0.0 /base_link /laser_frame 50" /> 
+
+
+</launch>
