@@ -21,6 +21,10 @@
     <arg name="move_forward_only" value="$(arg move_forward_only)"/>
   </include>
 
+  <!-- custom costmap -->
+  <!--
+  <node pkg="vacuum_cleaner_navigation" name="costmap_clear" type="costmap_clear"/>
+  -->
   <!-- rviz -->
   <group if="$(arg open_rviz)"> 
     <node pkg="rviz" type="rviz" name="rviz" required="true"
