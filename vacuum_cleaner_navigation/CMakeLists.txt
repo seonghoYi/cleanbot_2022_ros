@@ -17,6 +17,12 @@ find_package(catkin REQUIRED COMPONENTS
   tf
   tf2
   costmap_2d
+  actionlib
+  actionlib_msgs
+  move_base
+  move_base_msgs
+
+  vacuum_cleaner_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -109,9 +115,17 @@ find_package(catkin REQUIRED COMPONENTS
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
+  INCLUDE_DIRS include
 #  LIBRARIES vacuum_cleaner_navigation
-#  CATKIN_DEPENDS roscpp std_msgs tf tf2
+  CATKIN_DEPENDS 
+  #actionlib
+  #actionlib_msgs
+  #move_base_msgs
+  roscpp 
+  std_msgs 
+  tf 
+  tf2
+
 #  DEPENDS system_lib
 )
 
@@ -129,6 +143,13 @@ include_directories(
 
 add_executable(costmap_clear src/costmap_clear.cpp)
 target_link_libraries(costmap_clear ${catkin_LIBRARIES})
+
+add_executable(recycle_scheduler src/recycle_scheduler.cpp)
+target_link_libraries(recycle_scheduler ${catkin_LIBRARIES})
+
+add_executable(a src/a.cpp)
+target_link_libraries(a ${catkin_LIBRARIES})
+
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
 #   src/${PROJECT_NAME}/vacuum_cleaner_navigation.cpp
