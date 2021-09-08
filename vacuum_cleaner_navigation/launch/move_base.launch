@@ -30,8 +30,10 @@
   -->
     <remap from="cmd_vel" to="$(arg cmd_vel_topic)"/>
     <remap from="odom" to="$(arg odom_topic)"/>
+    <!--
     <remap from="vacuum_cleaner/modified_global_costmap" to="$(arg global_costmap)"/>
     <remap from="vacuum_cleaner/modified_local_costmap" to="$(arg local_costmap)"/>
+    -->
     <param name="DWAPlannerROS/min_vel_x" value="0.0" if="$(arg move_forward_only)" />
   </node>
 </launch>
