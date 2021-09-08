@@ -1,0 +1,22 @@
+<launch>
+  <!-- Arguments -->
+  <arg name="set_base_frame" default="base_link"/>
+  <arg name="set_odom_frame" default="odom"/>
+  <arg name="set_map_frame"  default="map"/>
+  <arg name="open_rviz" default="true"/>
+
+  <!-- Gmapping -->
+  <node pkg="gmapping" type="slam_gmapping" name="vacuum_cleaner_slam_gmapping" output="screen">
+    <param name="base_frame" value="$(arg set_base_frame)"/>
+    <param name="odom_frame" value="$(arg set_odom_frame)"/>
+    <param name="map_frame"  value="$(arg set_map_frame)"/>
+    <rosparam command="load" file="$(find vacuum_cleaner_slam)/config/gmapping_params.yaml" />
+  </node>
+
+    <!-- rviz -->
+  <group if="$(arg open_rviz)"> 
+    <node pkg="rviz" type="rviz" name="rviz" required="true"
+          args="-d $(find vacuum_cleaner_slam)/rviz/vacuum_cleaner_slam.rviz"/>
+  </group>
+
+</launch>
