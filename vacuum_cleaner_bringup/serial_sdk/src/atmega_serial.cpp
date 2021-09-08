@@ -17,15 +17,18 @@ enum
 
 enum
 {
-    STOP = 0x00,
-    HOLD,
-    ADVANCE,
-    REVERSE,
-    TURN,
-    STEERING,
-    LMCONFIG,
-    RMCONFIG,
-    MTCONFIG
+    MOTOR_STOP = 0x00,
+    MOTOR_RUN,
+    MOTOR_SET_LEFT_SPEED,
+    MOTOR_SET_RIGHT_SPEED,
+    MOTOR_SET_LEFT_DIR,
+    MOTOR_SET_RIGHT_DIR,
+    BT_SET_CONFIG_MODE,
+    BT_CLEAR_CONFIG_MODE,
+    BT_WRITE,
+    SUCTION_MOTOR_RUN,
+    SUCTION_MOTOR_STOP,
+    SERVO_WRITE
 };
 
 const std::uint8_t ID = 0x01;
@@ -163,6 +166,31 @@ bool Controller::motor_config(std::uint8_t L_speed, bool L_dir, std::uint8_t R_s
 }
 */
 
+enum
+{
+	ROS_PKT_SYNC1 = 0,
+	ROS_PKT_SYNC2,
+	ROS_PKT_LEN1,
+	ROS_PKT_LEN2,
+	ROS_PKT_LENCHECK,
+	ROS_PKT_ID1,
+	ROS_PKT_ID2
+};
+
+enum
+{
+	ROS_STATE_SYNC1 = 0,
+	ROS_STATE_SYNC2,
+	ROS_STATE_LEN1,
+	ROS_STATE_LEN2,
+	ROS_STATE_LENCHECK,
+	ROS_STATE_ID1,
+	ROS_STATE_ID2,
+	ROS_STATE_MSGS,
+	ROS_STATE_CS
+};
+
+
 
 serial::Serial *p_driver;
 std::string dev_;
@@ -173,7 +201,6 @@ std::uint8_t *p_packet_buf_;
 
 
 bool send_inst(std::uint8_t id, std::uint8_t inst, std::uint8_t *param, uint16_t len);
-bool receive_packet();
 
 
 
@@ -226,87 +253,237 @@ bool send_inst(std::uint8_t id, std::uint8_t inst, std::uint8_t *param, std::uin
     {
         p_packet_buf_[index++] = (std::uint8_t)(255 - (std::uint8_t)(checksum % 256));
     }
+    /*
+    for (int i = 0; i < index; i++)
+    {
+        printf("%X\n", p_packet_buf_[i]);
+    }
+    */
 
     p_driver->write(p_packet_buf_, index);
     return ret;
 }
 
-bool receive_packet()
+bool receive_packet(ros_t *p_ros)
 {
-    return false;
+    bool ret = false;
+	std::uint8_t rx_data;
+	std::uint8_t index;
+	std::uint32_t buf;
+	/*
+	if (p_ros->is_open != true)
+	{
+		return false;
+	}
+    */
+
+
+	if (p_driver->available() > 0)
+	{
+        //printf("ok\n");
+		//rx_data = p_ros->driver.available(p_ros->ch);
+		//p_ros->driver.write(p_ros->ch, &rx_data, 1);
+		rx_data = p_driver->read();
+        //printf("%X\n", rx_data);
+		//p_ros->driver.write(p_ros->ch, &rx_data, 1);
+		//uartPrintf(_DEF_UART0, "%X\n", rx_data);
+	}
+	else
+	{
+		return false;
+	}
+
+    //printf("%X\n", p_ros->state);
+	switch(p_ros->state)
+	{
+		case ROS_STATE_SYNC1:
+			if (rx_data == 0xFF)
+			{
+				p_ros->packet_buf[ROS_PKT_SYNC1] = rx_data;
+				p_ros->state = ROS_STATE_SYNC2;
+			}
+			else
+			{
+				p_ros->state = ROS_STATE_SYNC1;
+			}
+			break;
+		case ROS_STATE_SYNC2:
+			if (rx_data == 0xFF)
+			{
+				p_ros->packet_buf[ROS_PKT_SYNC2] = rx_data;
+				p_ros->state = ROS_STATE_LEN1;
+			}
+			else
+			{
+				p_ros->state = ROS_STATE_SYNC1;
+			}
+			break;
+		case ROS_STATE_LEN1:
+			p_ros->packet_buf[ROS_PKT_LEN1] = rx_data;
+			p_ros->state = ROS_STATE_LEN2;
+			break;
+		case ROS_STATE_LEN2:
+			p_ros->packet_buf[ROS_PKT_LEN2] = rx_data;
+			p_ros->state = ROS_STATE_LENCHECK;
+			break;
+		case ROS_STATE_LENCHECK:
+			p_ros->packet_buf[ROS_STATE_LENCHECK] = rx_data;
+			
+			buf = p_ros->packet_buf[ROS_PKT_LEN2] + p_ros->packet_buf[ROS_PKT_LEN1];
+			p_ros->packet.msg_len_checksum = (std::uint8_t)255 - (std::uint8_t)(buf % 256);
+			//printf("%X\n", p_ros->packet.msg_len_checksum);
+			//printf("%X\n", buf);
+            if (p_ros->packet.msg_len_checksum == p_ros->packet_buf[ROS_PKT_LENCHECK])
+			{
+				p_ros->state = ROS_STATE_ID1;
+			}
+			else
+			{
+				p_ros->state = ROS_STATE_SYNC1;
+			}
+			
+			p_ros->packet.msg_len =	(p_ros->packet_buf[ROS_PKT_LEN1] << 0) & 0x00FF;
+			
+			p_ros->packet.msg_len |= (p_ros->packet_buf[ROS_PKT_LEN2] << 8) & 0xFF00;
+			break;
+		case ROS_STATE_ID1:
+			p_ros->packet_buf[ROS_STATE_ID1] = rx_data;
+			p_ros->state = ROS_STATE_ID2;
+			break;
+		case ROS_STATE_ID2:
+			p_ros->packet_buf[ROS_STATE_ID2] = rx_data;
+			p_ros->index = 7;
+			p_ros->packet.msgs = &p_ros->packet_buf[7];
+			if (p_ros->packet.msg_len > 0)
+			{
+				p_ros->state = ROS_STATE_MSGS;
+			}
+			else
+			{
+				p_ros->state = ROS_STATE_SYNC1;
+				ret = true;
+			}
+			break;
+		case ROS_STATE_MSGS:
+			index = p_ros->index;
+			p_ros->index++;
+			p_ros->packet_buf[index] = rx_data;
+			if (p_ros->index >= p_ros->packet.msg_len + 7)
+			{
+				p_ros->state = ROS_STATE_CS;
+				/*
+				p_ros->state = ROS_STATE_SYNC1;
+				p_ros->index = 0;
+				ret = true;
+				*/
+				//p_ros->driver.write(p_ros->ch, p_ros->packet_buf, p_ros->packet.msg_len + 7);
+			}
+			break;
+		case ROS_STATE_CS:
+			index = p_ros->index;
+			p_ros->packet_buf[index] = rx_data;
+			buf = 0;
+			for (int i = 0; i < p_ros->packet.msg_len; i++)
+			{
+				buf += p_ros->packet_buf[7 + i];
+			}
+			p_ros->packet.checksum = 255 - (uint8_t)(buf % 256);
+			if (p_ros->packet_buf[index] == p_ros->packet.checksum)
+			{
+				ret = true;
+				p_ros->state = ROS_STATE_SYNC1;
+			}
+			else
+			{
+				ret = false;
+				p_ros->state = ROS_STATE_SYNC1;
+			}
+			
+			p_ros->index = 0;
+		break;
+		default:
+			break;
+	}
+	if (ret == true)
+	{
+		p_ros->packet.id = p_ros->packet_buf[ROS_PKT_ID2];
+		p_ros->packet.inst = p_ros->packet_buf[ROS_PKT_ID1];
+	}
+	
+	return ret;
 }
 
 
 bool stopMotor()
 {
-    return send_inst(ID, STOP, NULL, 0);
+    return setLeftMotorSpeed(0) && setRightMotorSpeed(0) && send_inst(ID, MOTOR_STOP, NULL, 0);
 }
 
-bool holdMotor()
+bool runMotor()
 {
-    return send_inst(ID, HOLD, NULL, 0);
+    return send_inst(ID, MOTOR_RUN, NULL, 0);
 }
 
-bool advanceMotor(std::uint8_t speed)
-{
-    std::uint8_t param = speed;
-    return send_inst(ID, ADVANCE, &param, 1);
-}
-
-bool reverseMotor(std::uint8_t speed)
+bool setLeftMotorSpeed(std::uint8_t speed)
 {
     std::uint8_t param = speed;
-    return send_inst(ID, REVERSE, &param, 1);
+    return send_inst(ID, MOTOR_SET_LEFT_SPEED, &param, 1);
 }
 
-bool turnMotor(std::string direction, std::uint8_t speed)
+bool setRightMotorSpeed(std::uint8_t speed)
 {
-    std::uint8_t param[2];
-    if (direction == "CW")
-    {
-        param[0] = 1;
-    }
-    else if (direction == "CCW")
-    {
-        param[0] = 0;
-    }
-    else
-    {
-        return false;
-    }
-    param[1] = speed;
+    std::uint8_t param = speed;
+    return send_inst(ID, MOTOR_SET_RIGHT_SPEED, &param, 1);
+}
 
-    return send_inst(ID, TURN, param, 2);
+bool setLeftMotorDirection(bool dir)
+{
+    std::uint8_t param = dir;
+    return send_inst(ID, MOTOR_SET_LEFT_DIR, &param, 1);
     
 }
 
-bool steeringMotor(std::uint8_t steering_angle, std::uint8_t speed)
+bool setRightMotorDirection(bool dir)
 {
-    std::uint8_t param[2];
-    if (steering_angle < -100 || steering_angle > 100)
-    {
-        return false;
-    }
-    param[0] = steering_angle;
-    param[0] = speed;
-    return send_inst(ID, STEERING, param, 2);
+    std::uint8_t param = dir;
+    return send_inst(ID, MOTOR_SET_RIGHT_DIR, &param, 1);
 }
 
-bool configLeftMotor(std::uint8_t speed, bool dir)
+bool setModeBTConfig()
 {
-    std::uint8_t param[2] = {speed, dir};
-    return send_inst(ID, LMCONFIG, param, 2);
+    return send_inst(ID, BT_SET_CONFIG_MODE, NULL, 0);
 }
 
-bool configRightMotor(std::uint8_t speed, bool dir)
+bool clearModeBTConfig()
 {
-    std::uint8_t param[2] = {speed, dir};
-    return send_inst(ID, RMCONFIG, param, 2);
+    return send_inst(ID, BT_CLEAR_CONFIG_MODE, NULL, 0);
 }
 
-bool configMotor(std::uint8_t L_speed, bool L_dir, std::uint8_t R_speed, bool R_dir)
+bool writeBT(std::uint8_t *data, int len)
 {
-    std::uint8_t param[4] = {L_speed, L_dir, R_speed, R_dir};
-   
-    return send_inst(ID, MTCONFIG, param, 4);
+    return send_inst(ID, BT_WRITE, data, len);
+}
+
+bool runSuctionMotor()
+{
+    return send_inst(ID, SUCTION_MOTOR_RUN, NULL, 0);
+}
+
+bool stopSuctionMotor()
+{
+    return send_inst(ID, SUCTION_MOTOR_STOP, NULL, 0);
+}
+
+bool closeClamper()
+{
+    uint8_t l_data[] = {0, 180};
+    uint8_t r_data[] = {1, 0};
+    return send_inst(ID, SERVO_WRITE, l_data, 2) && send_inst(ID, SERVO_WRITE, r_data, 2);
+}
+
+bool openClamper()
+{
+    uint8_t l_data[] = {0, 0};
+    uint8_t r_data[] = {1, 180};
+    return send_inst(ID, SERVO_WRITE, l_data, 2) && send_inst(ID, SERVO_WRITE, r_data, 2);
 }
