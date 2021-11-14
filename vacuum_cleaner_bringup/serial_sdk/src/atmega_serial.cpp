@@ -28,7 +28,7 @@ enum
     BT_WRITE,
     SUCTION_MOTOR_RUN,
     SUCTION_MOTOR_STOP,
-    SERVO_WRITE
+    SERVO_WRITE,
 };
 
 const std::uint8_t ID = 0x01;
@@ -476,14 +476,14 @@ bool stopSuctionMotor()
 
 bool closeClamper()
 {
-    uint8_t l_data[] = {0, 180};
-    uint8_t r_data[] = {1, 0};
+    uint8_t l_data[] = {0, 150};
+    uint8_t r_data[] = {1, 30};
     return send_inst(ID, SERVO_WRITE, l_data, 2) && send_inst(ID, SERVO_WRITE, r_data, 2);
 }
 
 bool openClamper()
 {
-    uint8_t l_data[] = {0, 0};
-    uint8_t r_data[] = {1, 180};
+    uint8_t l_data[] = {0, 30};
+    uint8_t r_data[] = {1, 150};
     return send_inst(ID, SERVO_WRITE, l_data, 2) && send_inst(ID, SERVO_WRITE, r_data, 2);
 }
