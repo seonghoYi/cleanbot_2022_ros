@@ -12,8 +12,8 @@ void controlMotor(float left_speed, float right_speed);
 void commandVelocityCallback(const geometry_msgs::Twist &cmd_vel)
 {
     //ROS_INFO("cmd_vel.linear.x: %f, cmd_vel.angular.z * ROBOT_WIDTH / 2: %f\n", cmd_vel.linear.x, cmd_vel.angular.z * ROBOT_WIDTH / 2);
-    float left_speed_out = cmd_vel.linear.x - cmd_vel.angular.z * ROBOT_WIDTH / 2; //v=rw 선속도=반지름*각속도
-    float right_speed_out = cmd_vel.linear.x + cmd_vel.angular.z * ROBOT_WIDTH / 2;
+    float left_speed_out = (cmd_vel.linear.x - cmd_vel.angular.z * ROBOT_WIDTH / 2); //v=rw 선속도=반지름*각속도
+    float right_speed_out = (cmd_vel.linear.x + cmd_vel.angular.z * ROBOT_WIDTH / 2);
     //ROS_INFO("left speed: %fm/s, right_speed: %fm/s\n", left_speed_out, right_speed_out);
     controlMotor(left_speed_out, right_speed_out);
 }
@@ -27,6 +27,18 @@ void servoCallback(const std_msgs::Bool &cmd_servo)
     else
     {
         openClamper();
+    }
+}
+
+void suctionCallback(const std_msgs::Bool &cmd_suction)
+{
+    if (cmd_suction.data)
+    {
+        runSuctionMotor();
+    }
+    else
+    {
+        stopSuctionMotor();
     }
 }
 
@@ -87,17 +99,18 @@ int main(int argc, char **argv)
 
     ros::init(argc, argv, "serial_node");
     ros::NodeHandle nh;
-    //ros::NodeHandle nh_private("~");
-    //nh_private.param<std::string>("port", port, "/dev/ttyUSB1");
-    //nh_private.param<int>("baudrate", baudrate, 34800); 
+    ros::NodeHandle nh_private("~");
+    nh_private.param<std::string>("port", port, "/dev/ttyUSB1");
+    nh_private.param<int>("baudrate", baudrate, 34800); 
 
-    nh.param<std::string>("port", port, "/dev/ttyUSB1");
-    nh.param<int>("baudrate", baudrate, 38400);
+    //nh.param<std::string>("port", port, "/dev/ttyUSB1");
+    //nh.param<int>("baudrate", baudrate, 38400);
 
     initMotor(port, baudrate, 128);    
 
     ros::Subscriber motor_sub = nh.subscribe("cmd_vel", 1000, commandVelocityCallback);
     ros::Subscriber servo_sub = nh.subscribe("cmd_servo", 128, servoCallback);
+    ros::Subscriber suction_sub = nh.subscribe("cmd_suction", 128, suctionCallback);
     ros::Publisher pub = nh.advertise<geometry_msgs::Twist>("current_speed", 100);
 
     ros::Time last_time = ros::Time::now();
