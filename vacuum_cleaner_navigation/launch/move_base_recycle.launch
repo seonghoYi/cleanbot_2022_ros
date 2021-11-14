@@ -1,0 +1,44 @@
+<launch>
+  <!-- Arguments -->
+  <arg name="cmd_vel_topic" default="/cmd_vel" />
+  <arg name="odom_topic" default="/odom" />
+  <arg name="global_costmap" default="/move_base/global_costmap/costmap" />
+  <arg name="global_costmap_update" default="/move_base/global_costmap/costmap_updates" />
+  <arg name="local_costmap" default="/move_base/local_costmap/costmap" />
+  <arg name="local_costmap_update" default="/move_base/local_costmap/costmap_updates" />
+  <arg name="move_forward_only" default="false"/>
+
+  <!-- move_base -->
+  <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
+  
+    <param name="base_local_planner" value="dwa_local_planner/DWAPlannerROS" />
+    <rosparam file="$(find vacuum_cleaner_navigation)/param/recycle_costmap_common_params.yaml" command="load" ns="global_costmap" />
+    <rosparam file="$(find vacuum_cleaner_navigation)/param/recycle_costmap_common_params.yaml" command="load" ns="local_costmap" />
+    <rosparam file="$(find vacuum_cleaner_navigation)/param/recycle_local_costmap_params.yaml" command="load" />
+    <rosparam file="$(find vacuum_cleaner_navigation)/param/recycle_global_costmap_params.yaml" command="load" />
+    <rosparam file="$(find vacuum_cleaner_navigation)/param/move_base_params.yaml" command="load" />
+    <rosparam file="$(find vacuum_cleaner_navigation)/param/dwa_local_planner_params_recycle.yaml" command="load" />
+  
+    <!--
+    <param name="base_local_planner" value="teb_local_planner/TebLocalPlannerROS" />
+    <rosparam file="$(find vacuum_cleaner_navigation)/param/recycle_costmap_common_params.yaml" command="load" ns="global_costmap" />
+    <rosparam file="$(find vacuum_cleaner_navigation)/param/recycle_costmap_common_params.yaml" command="load" ns="local_costmap" />
+    <rosparam file="$(find vacuum_cleaner_navigation)/param/recycle_local_costmap_params.yaml" command="load" />
+    <rosparam file="$(find vacuum_cleaner_navigation)/param/recycle_global_costmap_params.yaml" command="load" />
+    <rosparam file="$(find vacuum_cleaner_navigation)/param/move_base_params.yaml" command="load" />
+    <rosparam file="$(find vacuum_cleaner_navigation)/param/teb_local_planner_params.yaml" command="load" />
+    -->
+    <remap from="cmd_vel" to="$(arg cmd_vel_topic)"/>
+    <remap from="odom" to="$(arg odom_topic)"/>
+    
+    
+    <remap from="vacuum_cleaner/modified_global_costmap" to="$(arg global_costmap)"/>
+    <remap from="vacuum_cleaner/modified_local_costmap" to="$(arg local_costmap)"/>
+    
+    <!--
+    <remap from="$(arg global_costmap)" to="/vacuum_cleaner/modified_global_costmap"/>
+    <remap from="$(arg local_costmap)" to="/vacuum_cleaner/modified_local_costmap"/>
+    -->
+    <param name="DWAPlannerROS/min_vel_x" value="0.0" if="$(arg move_forward_only)" />
+  </node>
+</launch>

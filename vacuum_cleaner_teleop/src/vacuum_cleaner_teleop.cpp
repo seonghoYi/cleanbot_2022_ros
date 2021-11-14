@@ -87,7 +87,7 @@ For Holonomic mode (strafing), hold down the shift key:
 
 t : up (+z)
 b : down (-z)
-a : clamp close, d: clamp open
+a : clamp close, d: clamp open, s:suction_toggle
 anything else : stop
 
 q/z : increase/decrease max speeds by 10%
@@ -99,10 +99,11 @@ CTRL-C to quit
 
 //float speed(0.065); // Linear velocity (m/s)
 //float turn(0.5); // Angular velocity (rad/s)
-float speed(0.1);
-float turn(0.6);
+float speed(0.12);
+float turn(0.8);
 float x(0), y(0), z(0), th(0); // Forward/backward/neutral direction vars
 bool servo_control = 0;
+bool suction_control = 0;
 char key(' ');
 
 int main(int argc, char **argv)
@@ -115,6 +116,7 @@ int main(int argc, char **argv)
 
     ros::Publisher vel_pub = nh.advertise<geometry_msgs::Twist>("cmd_vel", 100);
     ros::Publisher servo_pub = nh.advertise<std_msgs::Bool>("cmd_servo", 100);
+    ros::Publisher suction_pub = nh.advertise<std_msgs::Bool>("cmd_suction", 100);
 
     geometry_msgs::Twist twist;
 
@@ -136,6 +138,14 @@ int main(int argc, char **argv)
             printf("\rCurrent: speed %fm/s\tturn %frad/s | Last command: %c is_close:%x", speed, turn, key, servo_control);
             continue;
         }
+
+        if (key == 's')
+        {
+            suction_control ^= true;
+            suction_pub.publish(suction_control);
+            continue;
+        }
+
         // If the key corresponds to a key in moveBindings
         if (moveBindings.count(key) == 1)
         {
@@ -162,8 +172,8 @@ int main(int argc, char **argv)
             */
             if (speed < 0.07)
               speed = 0.07;
-            if (turn < 0.3)
-              turn = 0.3;
+            if (turn < 0.6)
+              turn = 0.6;
             printf("\rCurrent: speed %fm/s\tturn %frad/s | Last command: %c is_close:%x", speed, turn, key, servo_control);
         }
 

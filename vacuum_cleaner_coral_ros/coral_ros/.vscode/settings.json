@@ -1,10 +1,12 @@
 {
     "python.autoComplete.extraPaths": [
         "/home/seongholee/catkin_ws/devel/lib/python3/dist-packages",
-        "/opt/ros/noetic/lib/python3/dist-packages"
+        "/opt/ros/noetic/lib/python3/dist-packages",
+        "/home/seongholee/catkin_ws/src/vacuum_cleaner_ros/vacuum_cleaner_coral_ros/coral_ros/python/**"
     ],
     "python.analysis.extraPaths": [
         "/home/seongholee/catkin_ws/devel/lib/python3/dist-packages",
-        "/opt/ros/noetic/lib/python3/dist-packages"
+        "/opt/ros/noetic/lib/python3/dist-packages",
+        "/home/seongholee/catkin_ws/src/vacuum_cleaner_ros/vacuum_cleaner_coral_ros/coral_ros/python/**"
     ]
 }

@@ -2,6 +2,7 @@
 #include "std_msgs/Bool.h"
 #include "std_msgs/String.h"
 #include "geometry_msgs/Point32.h"
+#include "geometry_msgs/PointStamped.h"
 #include "geometry_msgs/PoseArray.h"
 #include "geometry_msgs/PoseWithCovarianceStamped.h"
 #include "geometry_msgs/Pose2D.h"
@@ -153,6 +154,7 @@ namespace ObjectHistory
 {
 typedef std::vector<std::tuple<std::string, float, geometry_msgs::Point32>> ObjHistory;
 typedef std::tuple<std::string, float, geometry_msgs::Point32> OBJ;
+typedef std::pair<ObjHistory::iterator, ObjHistory::iterator> ObjIndex;
 
 
 bool compareString(const OBJ& a, const OBJ& b) //ascending sort
@@ -210,9 +212,10 @@ public:
     bool updateHistory(OBJ obj_);
     bool sortByDistance(void);
     OBJ getHistory(void);
+    ObjIndex readHistory(void);
 
 private:
-    ObjHistory obj_history, obj_sorted_by_distance;
+    ObjHistory obj_history, obj_sorted_by_distance, obj_history_backup;
     ObjHistory::iterator index, end_index;
 
 };
@@ -241,6 +244,8 @@ bool ObjectHistory::updateHistory(OBJ obj_)
     //ROS_INFO("%ld\n", sizeof(obj_));
     //ROS_INFO("%ld\n", obj_history.size());
     
+    obj_history_backup = obj_history;
+
     //sort
     std::sort(obj_history.begin(), obj_history.end(), compareString);
     /*
@@ -256,7 +261,7 @@ bool ObjectHistory::updateHistory(OBJ obj_)
     
     if (iter_pair.first == obj_history.end()) // very first time
     {
-        ROS_INFO("new!\n");
+        ROS_INFO("new!");
         obj_history.push_back(obj_);
         return true;
     }
@@ -340,6 +345,13 @@ OBJ ObjectHistory::getHistory(void)
     return *ret;
 }
 
+ObjIndex ObjectHistory::readHistory(void)
+{
+    auto begin=obj_history_backup.begin(), end=obj_history_backup.end();
+
+    return std::make_pair(begin, end);
+}
+
 }
 
 
@@ -354,7 +366,8 @@ enum
     RECYCLE_TO_GOAL_READY,
     RECYCLE_FRONT_GOAL_SITE,
     RECYCLE_GOAL_SITE_REACHED,
-    RECYCLE_READY
+    RECYCLE_READY,
+    RECYCLE_READY_FACE
 };
 
 enum
@@ -364,7 +377,19 @@ enum
     PLAN_READY_TO_GOAL,
     PLAN_GO_TO_GOAL_FRONT,
     PLAN_GO_TO_GOAL,
+    PLAN_READY,
     PLAN_READY_RECYCLE
+};
+
+enum
+{
+    SEARCHING_SEQ_0 = 1,
+    SEARCHING_SEQ_1,
+    SEARCHING_SEQ_2,
+    SEARCHING_SEQ_3,
+    SEARCHING_SEQ_4,
+    SEARCHING_SEQ_5,
+    SEARCHING_SEQ_6
 };
 
 
@@ -395,10 +420,10 @@ class Scheduler
     geometry_msgs::Point32 CAN_GOAL, PLASTIC_GOAL, CARTON_GOAL, READY_GOAL;
     ros::NodeHandle nh_;
     ros::Subscriber move_state_sub_;
-    ros::Subscriber obj_name_sub_;
     ros::Subscriber obj_list_sub_;
     ros::Subscriber amcl_pose_sub_;
     ros::Publisher servo_pub_;
+    ros::Publisher marker_pub_, abs_obj_point_pub_;
     tf::TransformListener obj_listener, base_listener;
     tf::StampedTransform obj_transform, base_transform;
 
@@ -412,10 +437,11 @@ public:
     Scheduler(ros::NodeHandle nh);
     ~Scheduler();
     void task();
+    void abs_object_publisher();
     
 
 private:
-    int next_state, current_state, last_state;
+    int next_state, current_state, last_state, search_seq;
     bool obj_check;
     ros::Time current_time, last_time;
     geometry_msgs::Pose2D current_pose;
@@ -425,7 +451,6 @@ private:
 
     bool is_moving;
     void moveStateCallback(const std_msgs::BoolConstPtr &msg);
-    void objectNameCallback(const std_msgs::StringConstPtr &msg);
     void objectListCallback(const vacuum_cleaner_msgs::ObjectListConstPtr& msgs);
     void amclPoseCallback(const geometry_msgs::PoseWithCovarianceStampedConstPtr& msg);
 
@@ -434,6 +459,7 @@ private:
 Scheduler::Scheduler(ros::NodeHandle nh) : nh_(nh), ac("move_base", true)
 {
     next_state = RECYCLE_START;
+    search_seq = SEARCHING_SEQ_0;
     obj_check = false;
     current_time = ros::Time::now();
     last_time = ros::Time::now();
@@ -443,7 +469,7 @@ Scheduler::Scheduler(ros::NodeHandle nh) : nh_(nh), ac("move_base", true)
     CAN_GOAL.z = 0.0;
 
     PLASTIC_GOAL.x = -0.4;
-    PLASTIC_GOAL.y = -0.1;
+    PLASTIC_GOAL.y = -0.15;
     PLASTIC_GOAL.z = 0.0;
 
     CARTON_GOAL.x = -0.4;
@@ -451,13 +477,13 @@ Scheduler::Scheduler(ros::NodeHandle nh) : nh_(nh), ac("move_base", true)
     CARTON_GOAL.z = 0.0;
 
     READY_GOAL.x = -0.25;
-    READY_GOAL.y = -0.15;
+    READY_GOAL.y = -0.1;
     READY_GOAL.z = 0;
 
     this->servo_pub_ = this->nh_.advertise<std_msgs::Bool>("cmd_servo", 100);
+    this->abs_obj_point_pub_ = this->nh_.advertise<vacuum_cleaner_msgs::ObjectList>("vacuum_cleaner/abs_object_list", 100);
     this->move_state_sub_ = this->nh_.subscribe("move_state", 100, &Scheduler::moveStateCallback, this);
-    //this->obj_name_sub_ = this->nh_.subscribe("object_tracker/object_name", 100, &Scheduler::objectNameCallback, this);
-    this->obj_list_sub_ = this->nh_.subscribe("vacuum_cleaner/object_list", 100, &Scheduler::objectListCallback, this);
+    this->obj_list_sub_ = this->nh_.subscribe("coral_ros/object_list", 100, &Scheduler::objectListCallback, this);
     this->amcl_pose_sub_ = this->nh_.subscribe("amcl_pose", 100, &Scheduler::amclPoseCallback, this);
 
     while(!ac.waitForServer(ros::Duration(5.0)))
@@ -479,7 +505,7 @@ void Scheduler::task()
     if (current_state == RECYCLE_START)
     {
         obj_check = true;
-        if ((current_time - last_time).toSec() > 5.0)
+        if ((current_time - last_time).toSec() > 3.0)
         {
             ROS_INFO("\n-------sampling Done!-------");
             last_time = ros::Time::now();;
@@ -498,8 +524,42 @@ void Scheduler::task()
         
         if (std::get<0>(obj) == "NULL")
         {
+            geometry_msgs::Pose2D search_pose = current_pose;;
+
+            switch (search_seq)
+            {
+            case SEARCHING_SEQ_0:
+                search_pose.theta = 0*M_PI/180;
+                break;
+            case SEARCHING_SEQ_1:
+                search_pose.theta = 30*M_PI/180;
+                break;
+            case SEARCHING_SEQ_2:
+                search_pose.theta = 60*M_PI/180;
+                break;
+            case SEARCHING_SEQ_3:
+                search_pose.theta = 90*M_PI/180;
+                break;
+            case SEARCHING_SEQ_4:
+                search_pose.theta = -30*M_PI/180;
+                break;
+            case SEARCHING_SEQ_5:
+                search_pose.theta = -60*M_PI/180;
+                break;
+            case SEARCHING_SEQ_6:
+                search_pose.theta = -90*M_PI/180;
+                break;
+            default:
+                search_seq = 0; // executiong last state
+                break;           
+            }
+            search_seq++;
+
+            move_to(ac, search_pose);
+            
             last_state = current_state;
-            next_state = RECYCLE_START;
+            next_state = RECYCLE_GOAL_SEND;
+            
             last_time = ros::Time::now();
             return;
         }
@@ -516,7 +576,7 @@ void Scheduler::task()
 
 
         float local_distance = sqrt(pow(base_transform.getOrigin().x() - std::get<2>(obj).x, 2) + pow(base_transform.getOrigin().y() - std::get<2>(obj).y, 2));
-        geometry_msgs::Pose2D target_front_pose, catch_target_pose, goal_ready_pose, goal_front_pose, goal_pose, ready_pose;
+        geometry_msgs::Pose2D target_front_pose, catch_target_pose, goal_ready_pose, goal_front_pose, goal_pose, ready_pose, ready_face_pose;
         target_front_pose.x = std::get<2>(obj).x - 0.35 * cos(current_pose.theta);
         target_front_pose.y = std::get<2>(obj).y - 0.35 * sin(current_pose.theta);
         target_front_pose.theta = current_pose.theta;
@@ -524,8 +584,8 @@ void Scheduler::task()
 
         plan.push_back(target_front_pose);
 
-        catch_target_pose.x = std::get<2>(obj).x + 0.0 * cos(current_pose.theta);
-        catch_target_pose.y = std::get<2>(obj).y + 0.0 * sin(current_pose.theta);
+        catch_target_pose.x = std::get<2>(obj).x - 0.1 * cos(current_pose.theta);
+        catch_target_pose.y = std::get<2>(obj).y - 0.1 * sin(current_pose.theta);
         catch_target_pose.theta = current_pose.theta;
         ROS_INFO("target_catch= x: %f, y: %f, th: %f", catch_target_pose.x, catch_target_pose.y, catch_target_pose.theta);
         plan.push_back(catch_target_pose);
@@ -571,9 +631,16 @@ void Scheduler::task()
 
         ready_pose.x = READY_GOAL.x;
         ready_pose.y = READY_GOAL.y;
-        ready_pose.theta = 0*M_PI/180;
-        ROS_INFO("ready_pose= x: %f, y: %f, th: %f", ready_pose.x, ready_pose.y, ready_pose.theta);
+        ready_pose.theta = 0; // replanning below
+        ROS_INFO("ready_pose= x: %f, y: %f, th: %f//will replan", ready_pose.x, ready_pose.y, ready_pose.theta);
         plan.push_back(ready_pose);
+
+        ready_face_pose.x = READY_GOAL.x;
+        ready_face_pose.y = READY_GOAL.y;
+        ready_face_pose.theta = current_pose.theta;
+        ROS_INFO("ready_face_pose= x: %f, y: %f, th: %f", ready_face_pose.x, ready_face_pose.y, ready_face_pose.theta);
+        plan.push_back(ready_face_pose);
+
 
         last_state = current_state;
         next_state = RECYCLE_FRONT_TARGET;
@@ -587,7 +654,7 @@ void Scheduler::task()
     }
     else if (current_state == RECYCLE_CATCH_TARGET)
     {
-        if ((current_time - last_time).toSec() > 5.0)
+        if ((current_time - last_time).toSec() > 3.0)
         {
             move_to(ac, plan[PLAN_CATCH_TARGET]);
             last_state = current_state;
@@ -617,6 +684,13 @@ void Scheduler::task()
     }
     else if (current_state == RECYCLE_READY)
     {
+        plan[PLAN_READY].theta = current_pose.theta;
+        move_to(ac, plan[PLAN_READY]);
+        last_state = current_state;
+        next_state = RECYCLE_GOAL_SEND;
+    }
+    else if (current_state == RECYCLE_READY_FACE)
+    {
         move_to(ac, plan[PLAN_READY_RECYCLE]);
         last_state = current_state;
         next_state = RECYCLE_GOAL_SEND;
@@ -632,6 +706,11 @@ void Scheduler::task()
 
             switch (last_state)
             {
+            case RECYCLE_GET_NEXT_TARGET:
+                last_state = RECYCLE_GOAL_REACHED;
+                next_state = RECYCLE_START;
+                last_time = ros::Time::now();
+                break;
             case RECYCLE_FRONT_TARGET:
                 last_state = RECYCLE_GOAL_REACHED;
                 next_state = RECYCLE_CATCH_TARGET;
@@ -658,7 +737,12 @@ void Scheduler::task()
                 last_state = RECYCLE_GOAL_SITE_REACHED;
                 next_state = RECYCLE_READY;
                 break;
-            case RECYCLE_READY:
+            case RECYCLE_READY:  
+                last_state = RECYCLE_GOAL_SITE_REACHED;
+                next_state = RECYCLE_READY_FACE;
+                last_time = ros::Time::now();
+                break;
+            case RECYCLE_READY_FACE:
                 plan.clear();
                 last_state = RECYCLE_GOAL_SITE_REACHED;
                 next_state = RECYCLE_START;
@@ -668,6 +752,26 @@ void Scheduler::task()
         }
     }
 
+}
+
+void Scheduler::abs_object_publisher(void)
+{
+    ObjectHistory::ObjIndex idx = this->object_history.readHistory();
+    vacuum_cleaner_msgs::ObjectList abs_obj_list;
+    geometry_msgs::PointStamped temp;
+    temp.header.frame_id = "map";
+    temp.header.stamp = ros::Time::now();
+
+    for(auto it=idx.first; it!=idx.second; it++)
+    {
+        temp.point.x = std::get<2>(*it).x;
+        temp.point.y = std::get<2>(*it).y;
+
+        abs_obj_list.object_names.push_back(std::get<0>(*it));
+        abs_obj_list.object_points.push_back(temp);
+    }
+
+    abs_obj_point_pub_.publish(abs_obj_list);
 }
 
 void Scheduler::amclPoseCallback(const geometry_msgs::PoseWithCovarianceStampedConstPtr& msg)
@@ -694,51 +798,10 @@ void Scheduler::moveStateCallback(const std_msgs::BoolConstPtr &msg)
     this->is_moving = msg->data;
 }
 
-void Scheduler::objectNameCallback(const std_msgs::StringConstPtr &msg)
-{
-    obj_name = msg->data;
- 
-    if (!obj_check)
-    {
-        return;
-    }
-    if (obj_name.empty())
-    {
-        return;
-    }
-    obj_listener.waitForTransform("/map", obj_name, ros::Time(0), ros::Duration(1.0));
-
-    try
-    {
-        obj_listener.lookupTransform("/map", obj_name, ros::Time(0), obj_transform);
-        //base_listener.lookupTransform("/map", "/base_link", ros::Time(0), base_transform);
-    }
-    catch (tf::TransformException ex)
-    {
-        ROS_ERROR("%s",ex.what());
-        return;
-    }
-
-    geometry_msgs::Point32 obj;
-    obj.x = obj_transform.getOrigin().x();
-    obj.y = obj_transform.getOrigin().y();
-    obj.z = 0;
-
-    distance = sqrt(pow(obj.x, 2) + pow(obj.y, 2));
-
-    //ROS_INFO("%s, %f\n", obj_name.c_str(), distance);
-
-    bool test = object_history.updateHistory({obj_name, distance, obj});
-
-    //ROS_INFO("%x\n", test);
-    //ROS_INFO("obj: %f, %f, %f\n", obj_transform.getOrigin().x(), obj_transform.getOrigin().y(), obj_transform.getOrigin().z());
-    //ROS_INFO("odom: %f, %f, %f\n", base_transform.getOrigin().x(), base_transform.getOrigin().y(), base_transform.getOrigin().z());
-}
-
 void Scheduler::objectListCallback(const vacuum_cleaner_msgs::ObjectListConstPtr& msgs)
 {
     vacuum_cleaner_msgs::ObjectList list = *msgs;
-    
+    geometry_msgs::PointStamped point_transformed;
 
     if (!obj_check)
     {
@@ -746,13 +809,11 @@ void Scheduler::objectListCallback(const vacuum_cleaner_msgs::ObjectListConstPtr
     }
 
     
-    for(auto it=list.object_list.begin(); it!=list.object_list.end(); it++)
+    for(auto i=0; i<list.object_names.size(); i++)
     {
-        obj_listener.waitForTransform("/map", *it, ros::Time(0), ros::Duration(1.0));
         try
         {
-            obj_listener.lookupTransform("/map", *it, ros::Time(0), obj_transform);
-            //base_listener.lookupTransform("/map", "/base_link", ros::Time(0), base_transform);
+            obj_listener.transformPoint("map", list.object_points[i], point_transformed);
         }
         catch (tf::TransformException ex)
         {
@@ -761,13 +822,13 @@ void Scheduler::objectListCallback(const vacuum_cleaner_msgs::ObjectListConstPtr
         }
 
         geometry_msgs::Point32 obj;
-        obj.x = obj_transform.getOrigin().x();
-        obj.y = obj_transform.getOrigin().y();
+        obj.x = point_transformed.point.x;
+        obj.y = point_transformed.point.y;
         obj.z = 0;
 
         distance = sqrt(pow(obj.x, 2) + pow(obj.y, 2));
-
-        bool test = object_history.updateHistory({*it, distance, obj});
+        std::string parsed_name = list.object_names[i].substr(0, list.object_names[i].find('-'));
+        bool test = object_history.updateHistory({parsed_name, distance, obj});
     }
 
 
@@ -788,6 +849,8 @@ int main(int argc, char **argv)
     {
         ros::spinOnce();
         scheduler.task();
+        //scheduler.object_marker_publisher();
+        scheduler.abs_object_publisher();
         r.sleep();
     }
 }

@@ -1,0 +1,35 @@
+<launch>
+    <arg name="map" default="$(find vacuum_cleaner_navigation)/maps/map.yaml"/>
+    <arg name="robot_radius" default="0.175"/>
+    <arg name="tool_radius" default="0.175"/>
+    <arg name="rviz" default="true"/>
+    
+
+    <include file="$(find vacuum_cleaner_navigation)/launch/amcl.launch"/>
+
+    
+    <node name="map_server" pkg="map_server" type="map_server" args="$(arg map)">
+        <param name="frame_id" value="map"/>
+    </node>
+
+    <node pkg="mbf_costmap_nav" type="mbf_costmap_nav" respawn="false" name="move_base_flex" output="screen" required="true">
+        <param name="tf_timeout" value="1.5"/>
+        <rosparam file="$(find vacuum_cleaner_navigation)/param/planners.yaml" command="load" />
+        <rosparam file="$(find vacuum_cleaner_navigation)/param/local_costmap_params.yaml" command="load" />
+        <param name="SpiralSTC/robot_radius" value="$(arg robot_radius)"/>
+        <param name="SpiralSTC/tool_radius" value="$(arg tool_radius)"/>
+        <param name="global_costmap/robot_radius" value="$(arg robot_radius)"/>
+        <remap from="odom" to="/odom"/>
+        <remap from="scan" to="/scan"/>
+
+        <remap from="/move_base_flex/SpiralSTC/plan" to="/move_base/SpiralSTC/plan"/>
+        <remap from="/move_base_flex/tracking_pid/interpolator" to="/move_base/TrackingPidLocalPlanner/interpolator"/>
+    </node>
+
+    <node pkg="mbf_costmap_nav" type="move_base_legacy_relay.py" name="move_base" >
+        <param name="base_local_planner" value="DWAPlannerROS" />
+        <param name="base_global_planner" value="SpiralSTC" />
+    </node>
+
+    <node if="$(eval rviz)" name="rviz" pkg="rviz" type="rviz" args="-d $(find vacuum_cleaner_navigation)/rviz/fcpp.rviz" />
+</launch>
