@@ -12,13 +12,12 @@ from PIL import Image
 from PIL import ImageDraw
 
 from pycoral.adapters import common
-from pycoral.adapters import detect
+#from pycoral.adapters import detect
+from coral_usb.adapters import detect
 from pycoral.utils.dataset import read_label_file
 from pycoral.utils.edgetpu import make_interpreter
 
 import time
-
-
 
 def draw_objects(draw, objs, labels):
     for obj in objs:
@@ -66,7 +65,7 @@ def main():
     interpreter.allocate_tensors()
     
     #time.sleep(1)
-    print("run")
+    print("detecter running")
 
     while not rospy.is_shutdown():
         start = time.time()
@@ -76,11 +75,11 @@ def main():
         image = Image.fromarray(cv_image)
         _, scale = common.set_resized_input(interpreter, image.size, lambda size: image.resize(size, Image.ANTIALIAS))
         interpreter.invoke()
-        objs = detect.get_objects(interpreter, 0.4, scale)
+        objs = detect.get_objects(interpreter, 0.5, scale)
 
         image = image.convert('RGB')
         draw_objects(ImageDraw.Draw(image), objs, labels)
-        ImageDraw.Draw(image).text((10, 10), '%.1f' % (1/(time.time()-start)), fill='red')
+        ImageDraw.Draw(image).text((10, 10), 'FPS:%.1f' % (1/(time.time()-start)), fill='red')
         bounding_boxes = BoundingBoxes()
 
         for obj in objs:
