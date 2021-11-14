@@ -8,21 +8,21 @@
 
 #include <cmath>
 
-static float vx, vth;
+static float cmd_vx, cmd_vth, vx, vth;
 static float th_imu;
  // initial pose
 static double x(0), y(0), th(0);
 
 void commandVelocityCallback(const geometry_msgs::Twist &cmd_vel)
 {
-    vx = cmd_vel.linear.x;
-    //vth = cmd_vel.angular.z;
+    cmd_vx = cmd_vel.linear.x;
+    cmd_vth = cmd_vel.angular.z;
 }
 
 void velocityCallback(const geometry_msgs::Twist &vel)
 {
-    vx = 2*vel.linear.x;
-    //vth = 2*vel.angular.z;
+    vx = vel.linear.x;
+    vth = vel.angular.z;
 }
 
 void imuCallback(const sensor_msgs::Imu &imu)
@@ -51,11 +51,11 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "odom_pub");
     ros::NodeHandle nh;
     //ros::Subscriber cmd_vel_sub = nh.subscribe("cmd_vel", 1000, commandVelocityCallback);
-    ros::Subscriber imu_sub = nh.subscribe("imu/data_filtered", 100, imuCallback);
+    //ros::Subscriber imu_sub = nh.subscribe("imu/data_filtered", 100, imuCallback);
     ros::Subscriber vel_sub = nh.subscribe("current_speed", 1024, velocityCallback);
     
     ros::Publisher move_state_pub = nh.advertise<std_msgs::Bool>("move_state", 128);
-    ros::Publisher odom_pub = nh.advertise<nav_msgs::Odometry>("odom", 128);
+    ros::Publisher odom_pub = nh.advertise<nav_msgs::Odometry>("vacuum_cleaner/odom", 128);
 
     ros::ServiceServer odom_clear = nh.advertiseService("vacuum_cleaner/odom_clear", odomClear);
     tf::TransformBroadcaster odom_broadcaster;
@@ -70,7 +70,7 @@ int main(int argc, char **argv)
     std_srvs::Empty empty_msgs;
     std_msgs::Bool is_moving;
 
-    ros::Rate r(20.0);
+    ros::Rate r(50.0);
 
     while(nh.ok())
     {
@@ -87,8 +87,8 @@ int main(int argc, char **argv)
 
         x += delta_x;
         y += delta_y;
-        //th += delta_th;
-        th = th_imu;
+        th += delta_th;
+        //th = th_imu;
         /*
         double delta_translation = vx * dt;
         double delta_th = vth * dt;
@@ -128,6 +128,13 @@ int main(int argc, char **argv)
         odom.twist.twist.linear.x = vx * cos(th);
         odom.twist.twist.linear.y = vx * sin(th);
         odom.twist.twist.angular.z = vth;
+
+        odom.pose.covariance[0] = 0.00001;
+        odom.pose.covariance[7] = 0.00001;
+        odom.pose.covariance[14] = 1000000000000.0;
+        odom.pose.covariance[21] = 1000000000000.0;
+        odom.pose.covariance[28] = 1000000000000.0;
+        odom.pose.covariance[35] = 0.001;
 
         last_time = current_time;
 
