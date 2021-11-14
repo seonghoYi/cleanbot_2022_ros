@@ -1,7 +1,7 @@
 <launch>
   <arg name="serial_no"           default=""/>
   <arg name="usb_port_id"         default=""/>
-  <arg name="device_type"         default="d435"/>
+  <arg name="device_type"         default=""/>
   <arg name="json_file_path"      default=""/>
   <arg name="camera"              default="camera"/>
   <arg name="tf_prefix"           default="$(arg camera)"/>
@@ -61,7 +61,7 @@
   <arg name="unite_imu_method"          default="linear_interpolation"/>
   <arg name="topic_odom_in"             default="odom_in"/>
   <arg name="calib_odom_file"           default=""/>
-  <arg name="publish_odom_tf"           default="true"/>
+  <arg name="publish_odom_tf"           default="false"/>
 
   <arg name="stereo_module/exposure/1"  default="7500"/>
   <arg name="stereo_module/gain/1"      default="16"/>
