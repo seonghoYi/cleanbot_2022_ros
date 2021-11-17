@@ -102,8 +102,7 @@ CTRL-C to quit
 float speed(0.12);
 float turn(0.8);
 float x(0), y(0), z(0), th(0); // Forward/backward/neutral direction vars
-bool servo_control = 0;
-bool suction_control = 0;
+std_msgs::Bool servo_control, suction_control;
 char key(' ');
 
 int main(int argc, char **argv)
@@ -126,22 +125,22 @@ int main(int argc, char **argv)
 
         if (key == 'a')
         {
-            servo_control = true;
+            servo_control.data = true;
             servo_pub.publish(servo_control);
-            printf("\rCurrent: speed %fm/s\tturn %frad/s | Last command: %c is_close:%x", speed, turn, key, servo_control);
+            printf("\rCurrent: speed %fm/s\tturn %frad/s | Last command: %c is_close:%x", speed, turn, key, servo_control.data);
             continue;
         }
         else if (key == 'd')
         {
-            servo_control = false;
+            servo_control.data = false;
             servo_pub.publish(servo_control);
-            printf("\rCurrent: speed %fm/s\tturn %frad/s | Last command: %c is_close:%x", speed, turn, key, servo_control);
+            printf("\rCurrent: speed %fm/s\tturn %frad/s | Last command: %c is_close:%x", speed, turn, key, servo_control.data);
             continue;
         }
 
         if (key == 's')
         {
-            suction_control ^= true;
+            suction_control.data ^= true;
             suction_pub.publish(suction_control);
             continue;
         }
@@ -155,7 +154,7 @@ int main(int argc, char **argv)
             z = moveBindings[key][2];
             th = moveBindings[key][3];
 
-            printf("\rCurrent: speed %fm/s\tturn %frad/s | Last command: %c is_close:%x", speed, turn, key, servo_control);
+            printf("\rCurrent: speed %fm/s\tturn %frad/s | Last command: %c is_close:%x", speed, turn, key, servo_control.data);
         }
 
         // Otherwise if it corresponds to a key in speedBindings
@@ -174,7 +173,7 @@ int main(int argc, char **argv)
               speed = 0.07;
             if (turn < 0.6)
               turn = 0.6;
-            printf("\rCurrent: speed %fm/s\tturn %frad/s | Last command: %c is_close:%x", speed, turn, key, servo_control);
+            printf("\rCurrent: speed %fm/s\tturn %frad/s | Last command: %c is_close:%x", speed, turn, key, servo_control.data);
         }
 
         // Otherwise, set the robot to stop
@@ -192,7 +191,7 @@ int main(int argc, char **argv)
                 break;
             }
 
-            printf("\rCurrent: speed %fm/s\tturn %frad/s | Invalid_command! is_close:%x", speed, turn, servo_control);
+            printf("\rCurrent: speed %fm/s\tturn %frad/s | Invalid_command! is_close:%x", speed, turn, servo_control.data);
         }
         // Update the Twist message
         twist.linear.x = x * speed;

@@ -701,7 +701,7 @@ void Scheduler::task()
     {
         if (ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
         {
-            bool tmp;
+            std_msgs::Bool tmp;
             ROS_INFO("Goal Reached");
 
             switch (last_state)
@@ -717,7 +717,7 @@ void Scheduler::task()
                 last_time = ros::Time::now();
                 break;
             case RECYCLE_CATCH_TARGET:
-                tmp = true;
+                tmp.data = true;
                 servo_pub_.publish(tmp);
                 last_state = RECYCLE_GOAL_REACHED;
                 next_state = RECYCLE_TO_GOAL_READY;
@@ -732,7 +732,7 @@ void Scheduler::task()
                 next_state = RECYCLE_GOAL_SITE_REACHED;
                 break;
             case RECYCLE_GOAL_SITE_REACHED:
-                tmp = false;
+                tmp.data = false;
                 servo_pub_.publish(tmp);
                 last_state = RECYCLE_GOAL_SITE_REACHED;
                 next_state = RECYCLE_READY;
