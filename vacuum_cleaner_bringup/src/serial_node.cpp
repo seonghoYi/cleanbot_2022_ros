@@ -18,9 +18,9 @@ void commandVelocityCallback(const geometry_msgs::Twist &cmd_vel)
     controlMotor(left_speed_out, right_speed_out);
 }
 
-void servoCallback(const std_msgs::Bool &cmd_servo)
+void servoCallback(const std_msgs::BoolConstPtr &cmd_servo)
 {
-    if (cmd_servo.data)
+    if (cmd_servo->data)
     {
         closeClamper();
     }
@@ -30,9 +30,9 @@ void servoCallback(const std_msgs::Bool &cmd_servo)
     }
 }
 
-void suctionCallback(const std_msgs::Bool &cmd_suction)
+void suctionCallback(const std_msgs::BoolConstPtr &cmd_suction)
 {
-    if (cmd_suction.data)
+    if (cmd_suction->data)
     {
         runSuctionMotor();
     }
