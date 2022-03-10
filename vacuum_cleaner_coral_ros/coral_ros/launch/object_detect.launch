@@ -1,8 +1,8 @@
 <launch>
     <arg name="input_image" default="/camera/color/image_raw"/>
     <arg name="camera_info_topic" default="/camera/color/camera_info" />
-    <arg name="model_file_path" default="$(find coral_ros)/test_data/ssd_mobilenet_v2_coco_quant_postprocess_edgetpu.tflite" />
-    <arg name="model_label_path" default="$(find coral_ros)/test_data/coco_labels.txt" />
+    <arg name="model_file_path" default="$(find coral_ros)/test_data/tftf_gsr_ep1_op_edgetpu.tflite" />
+    <arg name="model_label_path" default="$(find coral_ros)/test_data/obj_labels.txt" />
 
 
     <node name="object_detect" pkg="coral_ros" type="object_detect.py" output="screen">

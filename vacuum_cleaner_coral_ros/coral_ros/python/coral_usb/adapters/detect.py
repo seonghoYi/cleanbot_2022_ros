@@ -85,15 +85,13 @@ class BBox(collections.namedtuple('BBox', ['xmin', 'ymin', 'xmax', 'ymax'])):
     Args:
       sx (float): Scale factor for the x-axis.
       sy (float): Scale factor for the y-axis.
-
     Returns:
       A :obj:`BBox` object with the rescaled dimensions.
     """
-    return BBox(
-        xmin=sx * self.xmin,
-        ymin=sy * self.ymin,
-        xmax=sx * self.xmax,
-        ymax=sy * self.ymax)
+    return BBox(xmin=sx * self.xmin,
+                ymin=sy * self.ymin,
+                xmax=sx * self.xmax,
+                ymax=sy * self.ymax)
 
   def translate(self, dx, dy):
     """Translates the bounding box position.
@@ -101,30 +99,26 @@ class BBox(collections.namedtuple('BBox', ['xmin', 'ymin', 'xmax', 'ymax'])):
     Args:
       dx (int): Number of pixels to move the box on the x-axis.
       dy (int): Number of pixels to move the box on the y-axis.
-
     Returns:
       A :obj:`BBox` object at the new position.
     """
-    return BBox(
-        xmin=dx + self.xmin,
-        ymin=dy + self.ymin,
-        xmax=dx + self.xmax,
-        ymax=dy + self.ymax)
+    return BBox(xmin=dx + self.xmin,
+                ymin=dy + self.ymin,
+                xmax=dx + self.xmax,
+                ymax=dy + self.ymax)
 
   def map(self, f):
     """Maps all box coordinates to a new position using a given function.
 
     Args:
       f: A function that takes a single coordinate and returns a new one.
-
     Returns:
       A :obj:`BBox` with the new coordinates.
     """
-    return BBox(
-        xmin=f(self.xmin),
-        ymin=f(self.ymin),
-        xmax=f(self.xmax),
-        ymax=f(self.ymax))
+    return BBox(xmin=f(self.xmin),
+                ymin=f(self.ymin),
+                xmax=f(self.xmax),
+                ymax=f(self.ymax))
 
   @staticmethod
   def intersect(a, b):
@@ -133,16 +127,14 @@ class BBox(collections.namedtuple('BBox', ['xmin', 'ymin', 'xmax', 'ymax'])):
     Args:
       a: :obj:`BBox` A.
       b: :obj:`BBox` B.
-
     Returns:
       A :obj:`BBox` representing the area where the two boxes intersect
       (may be an invalid box, check with :func:`valid`).
     """
-    return BBox(
-        xmin=max(a.xmin, b.xmin),
-        ymin=max(a.ymin, b.ymin),
-        xmax=min(a.xmax, b.xmax),
-        ymax=min(a.ymax, b.ymax))
+    return BBox(xmin=max(a.xmin, b.xmin),
+                ymin=max(a.ymin, b.ymin),
+                xmax=min(a.xmax, b.xmax),
+                ymax=min(a.ymax, b.ymax))
 
   @staticmethod
   def union(a, b):
@@ -151,16 +143,14 @@ class BBox(collections.namedtuple('BBox', ['xmin', 'ymin', 'xmax', 'ymax'])):
     Args:
       a: :obj:`BBox` A.
       b: :obj:`BBox` B.
-
     Returns:
       A :obj:`BBox` representing the unified area of the two boxes
       (always a valid box).
     """
-    return BBox(
-        xmin=min(a.xmin, b.xmin),
-        ymin=min(a.ymin, b.ymin),
-        xmax=max(a.xmax, b.xmax),
-        ymax=max(a.ymax, b.ymax))
+    return BBox(xmin=min(a.xmin, b.xmin),
+                ymin=min(a.ymin, b.ymin),
+                xmax=max(a.xmax, b.xmax),
+                ymax=max(a.ymax, b.ymax))
 
   @staticmethod
   def iou(a, b):
@@ -169,7 +159,6 @@ class BBox(collections.namedtuple('BBox', ['xmin', 'ymin', 'xmax', 'ymax'])):
     Args:
       a: :obj:`BBox` A.
       b: :obj:`BBox` B.
-
     Returns:
       The intersection-over-union value: 1.0 meaning the two boxes are
       perfectly aligned, 0 if not overlapping at all (invalid intersection).
@@ -190,17 +179,20 @@ def get_objects(interpreter,
     interpreter: The ``tf.lite.Interpreter`` to query for results.
     score_threshold (float): The score threshold for results. All returned
       results have a score greater-than-or-equal-to this value.
-    image_scale (float, float): Scaling factor to apply to the bounding boxes as
-      (x-scale-factor, y-scale-factor), where each factor is from 0 to 1.0.
+    image_scale (float, float): Scaling factor to apply to the bounding boxes
+      as (x-scale-factor, y-scale-factor), where each factor is from 0 to 1.0.
 
   Returns:
     A list of :obj:`Object` objects, which each contains the detected object's
     id, score, and bounding box as :obj:`BBox`.
   """
-  # If a model has signature, we use the signature output tensor names to parse
-  # the results. Otherwise, we parse the results based on some assumption of the
-  # output tensor order and size.
-  # pylint: disable=protected-access
+  '''  
+  boxes = common.output_tensor(interpreter, 0)[0]
+  class_ids = common.output_tensor(interpreter, 1)[0]
+  scores = common.output_tensor(interpreter, 2)[0]
+  count = int(common.output_tensor(interpreter, 3)[0])
+  '''
+
   boxes = common.output_tensor(interpreter, 1)[0]
   class_ids = common.output_tensor(interpreter, 3)[0]
   scores = common.output_tensor(interpreter, 0)[0]
@@ -216,7 +208,9 @@ def get_objects(interpreter,
     return Object(
         id=int(class_ids[i]),
         score=float(scores[i]),
-        bbox=BBox(xmin=xmin, ymin=ymin, xmax=xmax,
+        bbox=BBox(xmin=xmin,
+                  ymin=ymin,
+                  xmax=xmax,
                   ymax=ymax).scale(sx, sy).map(int))
 
   return [make(i) for i in range(count) if scores[i] >= score_threshold]

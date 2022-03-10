@@ -28,7 +28,7 @@ enum
     BT_WRITE,
     SUCTION_MOTOR_RUN,
     SUCTION_MOTOR_STOP,
-    SERVO_WRITE,
+    SERVO_WRITE
 };
 
 const std::uint8_t ID = 0x01;

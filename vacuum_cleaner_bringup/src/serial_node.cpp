@@ -18,9 +18,9 @@ void commandVelocityCallback(const geometry_msgs::Twist &cmd_vel)
     controlMotor(left_speed_out, right_speed_out);
 }
 
-void servoCallback(const std_msgs::BoolConstPtr &cmd_servo)
+void servoCallback(const std_msgs::Bool &cmd_servo)
 {
-    if (cmd_servo->data)
+    if (cmd_servo.data)
     {
         closeClamper();
     }
@@ -30,9 +30,9 @@ void servoCallback(const std_msgs::BoolConstPtr &cmd_servo)
     }
 }
 
-void suctionCallback(const std_msgs::BoolConstPtr &cmd_suction)
+void suctionCallback(const std_msgs::Bool &cmd_suction)
 {
-    if (cmd_suction->data)
+    if (cmd_suction.data)
     {
         runSuctionMotor();
     }
@@ -92,8 +92,8 @@ void controlMotor(float left_speed, float right_speed)
 
 int main(int argc, char **argv)
 {
-    std::string port;
-    int baudrate = 38400;
+    std::string port; //= "/dev/ttyUSB1";
+	int baudrate = 38400;
     ros_t rosserial;
     rosserial.state = 0;
 
@@ -102,10 +102,9 @@ int main(int argc, char **argv)
     ros::NodeHandle nh_private("~");
     nh_private.param<std::string>("port", port, "/dev/ttyUSB1");
     nh_private.param<int>("baudrate", baudrate, 34800); 
-
-    //nh.param<std::string>("port", port, "/dev/ttyUSB1");
     //nh.param<int>("baudrate", baudrate, 38400);
 
+	
     initMotor(port, baudrate, 128);    
 
     ros::Subscriber motor_sub = nh.subscribe("cmd_vel", 1000, commandVelocityCallback);
@@ -140,7 +139,7 @@ int main(int argc, char **argv)
                 L_rpm = (rosserial.packet.msgs[0] && 0xFF) ? -L_rpm : L_rpm;
                 R_rpm = (rosserial.packet.msgs[1] && 0xFF) ? -R_rpm : R_rpm;
                 //ROS_INFO("%d, %d\n", L_rpm, R_rpm);
-                //ROS_INFO("%X, %X, %X, %X\n", rosserial.packet.msgs[2], rosserial.packet.msgs[3], rosserial.packet.msgs[4], rosserial.packet.msgs[5]); 
+               // ROS_INFO("%X, %X, %X, %X\n", rosserial.packet.msgs[2], rosserial.packet.msgs[3], rosserial.packet.msgs[4], rosserial.packet.msgs[5]); 
                 L_speed = L_rpm * (PI*WHEEL_WIDTH)/60;
                 R_speed = R_rpm * (PI*WHEEL_WIDTH)/60;
                 //ROS_INFO("%f, %f\n", L_speed, R_speed);
