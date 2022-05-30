@@ -32,8 +32,15 @@ bool odomClear(std_srvs::Empty::Request &req,
 
 int main(int argc, char **argv)
 {
+    bool use_ekf;
+
+
     ros::init(argc, argv, "odom_pub");
     ros::NodeHandle nh;
+    ros::NodeHandle nh_private("~");
+
+    nh_private.param<bool>("use_ekf", use_ekf, false);
+
     ros::Subscriber vel_sub = nh.subscribe("current_speed", 1024, velocityCallback);
     
     ros::Publisher move_state_pub = nh.advertise<std_msgs::Bool>("move_state", 128);
@@ -68,18 +75,22 @@ int main(int argc, char **argv)
         th += delta_th;
 
         geometry_msgs::Quaternion odom_quat = tf::createQuaternionMsgFromYaw(th);
-        
-        geometry_msgs::TransformStamped odom_trans;
-        odom_trans.header.stamp = current_time;
-        odom_trans.header.frame_id = "odom";
-        odom_trans.child_frame_id = "base_link";
 
-        odom_trans.transform.translation.x = x;
-        odom_trans.transform.translation.y = y;
-        odom_trans.transform.translation.z = 0.0;
-        odom_trans.transform.rotation = odom_quat;
+        if(use_ekf)
+        {
+          geometry_msgs::TransformStamped odom_trans;
+          odom_trans.header.stamp = current_time;
+          odom_trans.header.frame_id = "odom";
+          odom_trans.child_frame_id = "base_link";
 
-        odom_broadcaster.sendTransform(odom_trans);
+          odom_trans.transform.translation.x = x;
+          odom_trans.transform.translation.y = y;
+          odom_trans.transform.translation.z = 0.0;
+          odom_trans.transform.rotation = odom_quat;
+
+          odom_broadcaster.sendTransform(odom_trans);
+        }
+
         
         nav_msgs::Odometry odom;
         odom.header.stamp = current_time;

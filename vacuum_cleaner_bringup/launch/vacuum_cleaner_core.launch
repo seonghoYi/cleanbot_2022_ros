@@ -5,10 +5,18 @@
   </node>
 
   <node pkg="vacuum_cleaner_bringup" type="odom_node" name="odom_node" output="screen">
+    <param name="use_ekf" value="false"/>
   </node>
 
   <include file="$(find vacuum_cleaner_bringup)/launch/rs_camera.launch"/>
   <node pkg="tf" type="static_transform_publisher" name="base_link_to_camera"
-    args="0.14 0.03 0.065 0.0 0.0  0.0 /base_link /camera_link 20" /> 
-    
+    args="0.14 0.03 0.065 0.0 0.0  0.0 /base_link /camera_link 20" />
+
+  <include file="$(find vacuum_cleaner_bringup)/launch/imu_filter.launch"/>
+
+  <node pkg="robot_localization" type="ekf_localization_node" name="ekf_localization" clear_param="true">
+    <rosparam command="load" file="$(find vacuum_cleaner_bringup)/config/ekf_localization.yaml" />
+  </node>
+
+
 </launch>
