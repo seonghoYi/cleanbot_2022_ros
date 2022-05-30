@@ -8,31 +8,15 @@
 
 #include <cmath>
 
-static float cmd_vx, cmd_vth, vx, vth;
-static float th_imu;
+static float vx, vth;
+
  // initial pose
 static double x(0), y(0), th(0);
-
-void commandVelocityCallback(const geometry_msgs::Twist &cmd_vel)
-{
-    cmd_vx = cmd_vel.linear.x;
-    cmd_vth = cmd_vel.angular.z;
-}
 
 void velocityCallback(const geometry_msgs::Twist &vel)
 {
     vx = vel.linear.x;
-    //vth = vel.angular.z;
-}
-
-void imuCallback(const sensor_msgs::Imu &imu)
-{
-    vth = imu.angular_velocity.z;
-    //ROS_INFO("vth: %f\n", vth);
-    th_imu = tf::getYaw(imu.orientation);
-
-    //ROS_INFO("%f, %f\n", vth, th_imu);
-
+    vth = vel.angular.z;
 }
 
 bool odomClear(std_srvs::Empty::Request &req,
@@ -50,8 +34,6 @@ int main(int argc, char **argv)
 {
     ros::init(argc, argv, "odom_pub");
     ros::NodeHandle nh;
-    //ros::Subscriber cmd_vel_sub = nh.subscribe("cmd_vel", 1000, commandVelocityCallback);
-    ros::Subscriber imu_sub = nh.subscribe("imu/data_filtered", 100, imuCallback);
     ros::Subscriber vel_sub = nh.subscribe("current_speed", 1024, velocityCallback);
     
     ros::Publisher move_state_pub = nh.advertise<std_msgs::Bool>("move_state", 128);
@@ -59,9 +41,6 @@ int main(int argc, char **argv)
 
     ros::ServiceServer odom_clear = nh.advertiseService("vacuum_cleaner/odom_clear", odomClear);
     tf::TransformBroadcaster odom_broadcaster;
-
-
-   
 
     ros::Time current_time, last_time;
     current_time = ros::Time::now();
@@ -84,23 +63,10 @@ int main(int argc, char **argv)
         double delta_y = vx * sin(th) * dt;
         double delta_th = vth * dt;
         
-
         x += delta_x;
         y += delta_y;
-        //th += delta_th;
-        th = th_imu;
-        /*
-        double delta_translation = vx * dt;
-        double delta_th = vth * dt;
-        
         th += delta_th;
-        //th = delta_th;
-        x += delta_translation * cos(th);
-        y += delta_translation * sin(th);
-        */
-        //ROS_INFO("th: %lf\n", th);
-        //ROS_INFO("x:%f, y:%f, th:%f\n", x, y, th);
-        //ROS_INFO("delta_translation: %f, delta_th:%f\n", delta_translation, delta_th);
+
         geometry_msgs::Quaternion odom_quat = tf::createQuaternionMsgFromYaw(th);
         
         geometry_msgs::TransformStamped odom_trans;
@@ -130,7 +96,15 @@ int main(int argc, char **argv)
         odom.twist.twist.angular.z = vth;
 		
 
-		odom.pose.covariance[0] = 0.00001;
+        odom.twist.covariance[0] = 0.00001;
+        odom.twist.covariance[7] = 0.00001;
+        odom.twist.covariance[14] = 1000000000000.0;
+        odom.twist.covariance[21] = 1000000000000.0;
+        odom.twist.covariance[28] = 1000000000000.0;
+        odom.twist.covariance[35] = 0.001;
+
+
+        odom.pose.covariance[0] = 0.00001;
         odom.pose.covariance[7] = 0.00001;
         odom.pose.covariance[14] = 1000000000000.0;
         odom.pose.covariance[21] = 1000000000000.0;
