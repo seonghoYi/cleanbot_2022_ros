@@ -1,4 +1,0 @@
-<launch>
-    <include file="$(find coral_ros)/launch/object_detect.launch"/>
-    <include file="$(find coral_ros)/launch/object_tracker.launch"/>
-</launch>
