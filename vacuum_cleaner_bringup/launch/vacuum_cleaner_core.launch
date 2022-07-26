@@ -1,12 +1,10 @@
 <launch>
-  <node pkg="vacuum_cleaner_bringup" type="serial_node" name="serial_node" output="screen">
-    <param name="port" value="/dev/ttyUSB1"/>
-    <param name="baudrate" value="38400"/>
+  <node pkg="rosserial_python" type="serial_node.py" name="serial_node" output="screen">
+    <param name="port" value="/dev/ttyACM0"/>
+    <param name="baud" value="460800"/>
+    <param name="use_ekf" value="true"/>
   </node>
 
-  <node pkg="vacuum_cleaner_bringup" type="odom_node" name="odom_node" output="screen">
-    <param name="use_ekf" value="false"/>
-  </node>
 
   <include file="$(find vacuum_cleaner_bringup)/launch/rs_camera.launch"/>
   <node pkg="tf" type="static_transform_publisher" name="base_link_to_camera"
@@ -14,7 +12,7 @@
 
   <include file="$(find vacuum_cleaner_bringup)/launch/imu_filter.launch"/>
 
-  <node pkg="robot_localization" type="ekf_localization_node" name="ekf_localization" clear_param="true">
+  <node pkg="robot_localization" type="ekf_localization_node" name="ekf_localization" clear_params="true">
     <rosparam command="load" file="$(find vacuum_cleaner_bringup)/config/ekf_localization.yaml" />
   </node>
 

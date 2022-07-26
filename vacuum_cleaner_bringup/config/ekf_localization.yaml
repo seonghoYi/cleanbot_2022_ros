@@ -1,20 +1,20 @@
-frequency: 60
+frequency: 30
 two_d_mode: true
 publish_tf: true
 
-odom_fream: odom
+map_frame: map
+odom_frame: odom
 base_link_frame: base_link
-world_frame: odom
 
-transform_time_offset: 0.0
+transform_time_offset: 0.2
 transform_timeout: 0.1
 
 odom0: odom
-odom_config: [true, true, false,
+odom0_config: [true, true, false,
               false, false, false,
               false, false, false,
               false, false, false,
-              false, false, flase]
+              false, false, false]
 
 odom0_differential: true
 
