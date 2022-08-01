@@ -1,0 +1,12 @@
+<launch>
+    <arg name="imu_topic" default="/camera/imu" />
+    <arg name="filtered_imu_topic" default="/imu/data_filtered" />
+
+    <node pkg="imu_filter_madgwick" type="imu_filter_node" name="imu_filter_node" output="screen" respawn="false">
+        <param name="gain" value="0.05" />
+        <param name="zeta" value="0.0" />
+        <param name="use_mag" value="false" />
+        <remap from="/imu/data_raw" to="$(arg imu_topic)"/>
+        <remap from="/imu/data" to="$(arg filtered_imu_topic)"/>
+    </node>
+</launch>

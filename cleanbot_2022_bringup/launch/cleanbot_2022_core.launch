@@ -1,0 +1,22 @@
+<launch>
+  <node pkg="rosserial_python" type="serial_node.py" name="serial_node" output="screen">
+    <param name="port" value="/dev/ttyACM0"/>
+    <param name="baud" value="460800"/>
+    <param name="use_ekf" value="true"/>
+  </node>
+  
+  
+
+
+  <include file="$(find cleanbot_2022_bringup)/launch/rs_camera.launch"/>
+  <node pkg="tf" type="static_transform_publisher" name="base_link_to_camera"
+    args="0.14 0.03 0.065 0.0 0.0  0.0 /base_link /camera_link 20" />
+
+  <include file="$(find cleanbot_2022_bringup)/launch/imu_filter.launch"/>
+
+  <node pkg="robot_localization" type="ekf_localization_node" name="ekf_localization" clear_params="true">
+    <rosparam command="load" file="$(find cleanbot_2022_bringup)/config/ekf_localization.yaml" />
+  </node>
+
+
+</launch>
