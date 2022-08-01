@@ -1,4 +1,0 @@
-<launch>
-  <node pkg="vacuum_cleaner_teleop" type="vacuum_cleaner_teleop" name="vacuum_cleaner_teleop" output="screen">
-  </node>
-</launch>
