@@ -1,0 +1,4 @@
+<launch>
+    <include file="$(find cleanbot_2022_bringup)/launch/object_detector.launch"/>
+    <include file="$(find cleanbot_2022_bringup)/launch/object_tracker.launch"/>
+</launch>
