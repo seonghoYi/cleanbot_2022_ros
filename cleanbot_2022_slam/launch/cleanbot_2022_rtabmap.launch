@@ -14,7 +14,7 @@
     <arg unless="$(arg simulation)" name="depth_topic" default="/camera/aligned_depth_to_color/image_raw"/>
     <arg name="camera_info_topic" default="/camera/color/camera_info"/>
     <arg name="odom_topic"               default="/odometry/filtered"/>
-    <arg name="publish_tf_odom"          default="false"/>
+    <arg name="publish_tf_odom"          default="true"/>
     <arg name="wait_for_transform"  default="0.2"/>
 
 

@@ -8,8 +8,8 @@ planner_frequency: 0.0
 oscillation_timeout: 10.0
 oscillation_distance: 0.2
 
-make_plan_clear_costmap: false
-make_plan_add_unreachable_goal: false
+make_plan_clear_costmap: true
+#make_plan_add_unreachable_goal: false
 
-#recovery_behavior_enabled: false
-clearing_rotation_allowed: false
+recovery_behavior_enabled: true
+clearing_rotation_allowed: true
