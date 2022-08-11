@@ -98,7 +98,7 @@ def main():
 
         msg = rosImage()
         msg.header.stamp = rospy.Time.now()
-        msg.header.frame_id = "/camera_link"
+        msg.header.frame_id = "camera_link"
         msg.height = image.height
         msg.width = image.width
         msg.encoding = "rgb8"
