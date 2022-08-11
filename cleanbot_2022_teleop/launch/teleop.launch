@@ -1,4 +1,4 @@
 <launch>
-  <node pkg="vacuum_cleaner_teleop" type="vacuum_cleaner_teleop" name="vacuum_cleaner_teleop" output="screen">
+  <node pkg="cleanbot_2022_teleop" type="cleanbot_2022_teleop" name="cleanbot_2022_teleop" output="screen">
   </node>
 </launch>

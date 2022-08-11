@@ -150,8 +150,8 @@ include_directories(
 #   ${catkin_LIBRARIES}
 # )
 
-add_executable(vacuum_cleaner_teleop src/vacuum_cleaner_teleop.cpp)
-target_link_libraries(vacuum_cleaner_teleop ${catkin_LIBRARIES})
+add_executable(cleanbot_2022_teleop src/cleanbot_2022_teleop.cpp)
+target_link_libraries(cleanbot_2022_teleop ${catkin_LIBRARIES})
 
 #############
 ## Install ##
