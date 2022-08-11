@@ -1,7 +1,7 @@
 <launch>
     <arg name="input_image" default="/camera/color/image_raw"/>
     <arg name="camera_info_topic" default="/camera/color/camera_info" />
-    <arg name="model_file_path" default="$(find cleanbot_2022_bringup)/model/trash_detector_model_v2.tflite" />
+    <arg name="model_file_path" default="$(find cleanbot_2022_bringup)/model/trash_detector_v1.tflite" />
     <arg name="model_label_path" default="$(find cleanbot_2022_bringup)/model/trash_detector_labels.txt" />
 
 
